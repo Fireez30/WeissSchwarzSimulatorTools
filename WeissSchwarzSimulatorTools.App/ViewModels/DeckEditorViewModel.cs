@@ -53,8 +53,9 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
             Dirty = true;
         }) { Current = sleeve };
         Browser = new CardBrowserViewModel(Title, this);
-        Browser.SetSeries(series, null);
-        if (list.Entries().FirstOrDefault() is { Card: var first }) Browser.OpenSerieOf(first.Key);
+        // Straight to the deck's serie: opening a serie builds its whole grid.
+        var serie = list.Entries().FirstOrDefault() is { Card: { } first } ? CardBrowserViewModel.SerieNameOf(series, first.Key) : null;
+        Browser.SetSeries(series, serie);
         Refresh();
     }
 

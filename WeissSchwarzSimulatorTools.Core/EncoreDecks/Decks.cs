@@ -88,14 +88,14 @@ public static class Decks
 
     /// <summary>
     /// Downloads a deck and saves it as a new file in <paramref name="decksDir"/>, matched to the
-    /// loaded cards. Returns the deck as saved: its name gets a " (2)" suffix when taken.
+    /// loaded cards (<paramref name="index"/>). Returns the deck as saved: its name gets a " (2)"
+    /// suffix when taken.
     /// </summary>
-    public static async Task<Deck> ImportAsync(string link, IReadOnlyList<Serie> series, string decksDir)
+    public static async Task<Deck> ImportAsync(string link, CardIndex index, string decksDir)
     {
         var id = DeckIdFromLink(link) ?? throw new UserException($"not an encoredecks deck link: \"{link}\"");
         var fetched = await FetchDeckAsync(id);
 
-        var index = new CardIndex(series);
         var codes = CardCodes.TransformToExistingKeys(index.Codes(), fetched.Codes);
         var saved = DeckFiles.SaveNew(decksDir, fetched.Name, fetched.Date, "", codes);
         return index.ResolveDeck(saved.Name, saved.Date, codes);

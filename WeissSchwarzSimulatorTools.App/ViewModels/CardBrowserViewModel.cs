@@ -224,11 +224,14 @@ public sealed partial class CardBrowserViewModel : ObservableObject
         if (serie is not null) Load(serie, null);
     }
 
+    /// <summary>The name of the serie holding the card <paramref name="key"/>, if any.</summary>
+    public static string? SerieNameOf(IEnumerable<Serie> series, string key) =>
+        series.FirstOrDefault(s => s.Sets.Any(set => set.Cards.ContainsKey(key)))?.Name;
+
     /// <summary>Opens the serie holding the card <paramref name="key"/>, if any.</summary>
     public void OpenSerieOf(string key)
     {
-        var serie = _series.FirstOrDefault(s => s.Sets.Any(set => set.Cards.ContainsKey(key)));
-        if (serie is not null) OpenSerie(serie.Name);
+        if (SerieNameOf(_series, key) is { } name) OpenSerie(name);
     }
 
     [RelayCommand]

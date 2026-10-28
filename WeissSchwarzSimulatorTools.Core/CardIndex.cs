@@ -2,11 +2,15 @@
 
 namespace WeissSchwarzSimulatorTools;
 
-/// <summary>Lookup of every loaded card by code, across all series.</summary>
+/// <summary>
+/// Lookup of every loaded card by code, across all series. Building it reads every card: build it
+/// once per load and share it (it is only read afterwards, so any thread may use it).
+/// </summary>
 public sealed class CardIndex
 {
     private readonly Dictionary<string, Card> _exact = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Card> _lowercase = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _codes;
 
     public CardIndex(IEnumerable<Serie> series)
     {
@@ -16,9 +20,10 @@ public sealed class CardIndex
             _exact.TryAdd(card.Key, card);
             _lowercase.TryAdd(card.Key.ToLowerInvariant(), card);
         }
+        _codes = new HashSet<string>(_exact.Keys, StringComparer.Ordinal);
     }
 
-    public HashSet<string> Codes() => new(_exact.Keys, StringComparer.Ordinal);
+    public IReadOnlySet<string> Codes() => _codes;
 
     /// <summary>Exact, then without rarity suffix, then case-insensitively for both.</summary>
     public Card? Get(string code)

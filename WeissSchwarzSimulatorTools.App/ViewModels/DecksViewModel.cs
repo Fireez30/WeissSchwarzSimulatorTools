@@ -172,7 +172,7 @@ public sealed partial class DecksViewModel : ObservableObject
     {
         var file = _decks.FirstOrDefault(d => d.Path == path);
         if (file is null) return;
-        var deck = new CardIndex(_series).ResolveDeck(file.Name, file.Date, file.Codes);
+        var deck = _main.CardIndex.ResolveDeck(file.Name, file.Date, file.Codes);
         Open(file, deck);
     }
 
@@ -277,11 +277,11 @@ public sealed partial class DecksViewModel : ObservableObject
     /// <summary>Imports the deck at <paramref name="link"/>, then opens it and tells the user.</summary>
     private async Task ImportLink(string link)
     {
-        var (series, dir) = (_series, _main.DecksPath);
+        var (index, dir) = (_main.CardIndex, _main.DecksPath);
         Deck deck;
         try
         {
-            deck = await Task.Run(() => Decks.ImportAsync(link, series, dir));
+            deck = await Task.Run(() => Decks.ImportAsync(link, index, dir));
         }
         catch (Exception e)
         {

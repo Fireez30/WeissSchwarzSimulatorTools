@@ -49,6 +49,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Every card of the simulator, shared by every screen.</summary>
     public IReadOnlyList<Serie> Series { get; private set; } = [];
 
+    /// <summary>The loaded cards by code, to open decks: built once per load, as it reads every card.</summary>
+    public CardIndex CardIndex { get; private set; } = new([]);
+
     /// <summary>The simulator whose cards are loaded.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SimulatorPath), nameof(DecksPath), nameof(DecksFolderText))]
@@ -288,15 +291,16 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var series = await Task.Run(folder.LoadSeries);
-            var names = await Task.Run(() => new NameIndex(series));
+            var (names, index) = await Task.Run(() => (new NameIndex(series), new CardIndex(series)));
             var reloaded = Folder == folder;
             Series = series;
+            CardIndex = index;
             CardNames.Index = names;
             Folder = folder;
             _savedSerie = Settings.Get(WeissSchwarzSimulatorTools.Settings.Serie);
             Cards.SetSeries(series, _savedSerie);
             Decks.SetSeries(series);
-            Damage.SetSeries(series);
+            Damage.CardsChanged();
             OnPropertyChanged(nameof(SeriesText));
             OnPropertyChanged(nameof(SetsText));
             OnPropertyChanged(nameof(CardsText));
@@ -337,12 +341,13 @@ public sealed partial class MainViewModel : ObservableObject
     {
         DeleteSetting(WeissSchwarzSimulatorTools.Settings.SimulatorPath);
         Series = [];
+        CardIndex = new CardIndex([]);
         CardNames.Index = null;
         RelatedCards.Close();
         Folder = null;
         Cards.SetSeries([], null);
         Decks.SetSeries([]);
-        Damage.SetSeries([]);
+        Damage.CardsChanged();
         Screen = Screen.Setup;
         Setup.Revalidate();
         Setup.StartDetecting();

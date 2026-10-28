@@ -211,13 +211,13 @@ public sealed partial class EncoreViewModel : ObservableObject
         Resolved = null;
         Preview = null;
         Previewing = true;
-        var series = _main.Series;
+        var index = _main.CardIndex;
         try
         {
             var resolved = await Task.Run(async () =>
             {
                 var fetched = await WeissSchwarzSimulatorTools.EncoreDecks.Decks.FetchDeckAsync(deck.Id);
-                return new CardIndex(series).ResolveDeck(fetched.Name, fetched.Date, fetched.Codes);
+                return index.ResolveDeck(fetched.Name, fetched.Date, fetched.Codes);
             });
             if (Picked != deck) return;
             Resolved = resolved;
@@ -240,10 +240,10 @@ public sealed partial class EncoreViewModel : ObservableObject
     {
         if (Picked is not { } picked || Importing) return;
         Importing = true;
-        var (series, dir) = (_main.Series, _main.DecksPath);
+        var (index, dir) = (_main.CardIndex, _main.DecksPath);
         try
         {
-            var deck = await Task.Run(() => WeissSchwarzSimulatorTools.EncoreDecks.Decks.ImportAsync(WeissSchwarzSimulatorTools.EncoreDecks.Decks.DeckLink(picked.Id), series, dir));
+            var deck = await Task.Run(() => WeissSchwarzSimulatorTools.EncoreDecks.Decks.ImportAsync(WeissSchwarzSimulatorTools.EncoreDecks.Decks.DeckLink(picked.Id), index, dir));
             _main.Notify(new Notice.Info(ImportDialogViewModel.Message(deck)));
             await ReadLocalNames();
         }

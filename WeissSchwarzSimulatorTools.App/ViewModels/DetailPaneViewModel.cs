@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WeissSchwarzSimulatorTools.App.Controls;
@@ -65,11 +66,45 @@ public sealed partial class DetailPaneViewModel : ObservableObject
 
     public void Clear()
     {
+        _pendingHover = null;
         Card = null;
         Pinned = false;
     }
 
+    /// <summary>
+    /// How long the pointer must rest before the pane follows it again. Showing a card rebuilds the
+    /// pane, so sweeping across the grid would otherwise rebuild it for every card crossed.
+    /// </summary>
+    private static readonly TimeSpan HoverDelay = TimeSpan.FromMilliseconds(80);
+
+    private DispatcherTimer? _hoverTimer;
+    private Card? _pendingHover;
+
+    /// <summary>Shows the hovered card: at once after a pause, else once the pointer rests on it.</summary>
     public void Hover(Card card)
+    {
+        if (Pinned) return;
+        _hoverTimer ??= new DispatcherTimer(HoverDelay, DispatcherPriority.Normal, (_, _) => ShowPendingHover());
+        if (_hoverTimer.IsEnabled)
+        {
+            _pendingHover = card;
+            _hoverTimer.Stop();
+        }
+        else
+        {
+            ShowHover(card);
+        }
+        _hoverTimer.Start();
+    }
+
+    private void ShowPendingHover()
+    {
+        _hoverTimer?.Stop();
+        if (_pendingHover is { } card) ShowHover(card);
+        _pendingHover = null;
+    }
+
+    private void ShowHover(Card card)
     {
         if (!Pinned && Card?.Key != card.Key) Card = card;
     }
@@ -77,6 +112,7 @@ public sealed partial class DetailPaneViewModel : ObservableObject
     /// <summary>Clicking the pinned card again unpins it.</summary>
     public void Click(Card card)
     {
+        _pendingHover = null;
         if (PinnedKey == card.Key)
         {
             Pinned = false;
@@ -89,6 +125,7 @@ public sealed partial class DetailPaneViewModel : ObservableObject
     /// <summary>Shows <paramref name="card"/> pinned (a card clicked in the related cards window).</summary>
     public void Pin(Card card)
     {
+        _pendingHover = null;
         Card = card;
         Pinned = true;
     }

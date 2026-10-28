@@ -7,6 +7,9 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <!-- Published builds ship precompiled code, so the window opens without compiling Avalonia and
+         the app at every start. Only when publishing for a system (-r linux-x64, win-x64). -->
+    <PublishReadyToRun Condition="'$(RuntimeIdentifier)' != ''">true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.22" />

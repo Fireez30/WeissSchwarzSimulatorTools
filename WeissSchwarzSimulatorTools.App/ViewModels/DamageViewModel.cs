@@ -179,7 +179,6 @@ public sealed partial class DamageViewModel : ObservableObject
     private const double ChartHeight = 160;
 
     private readonly MainViewModel _main;
-    private IReadOnlyList<Serie> _series = [];
     private List<DeckFile> _decks = [];
     private Deck? _deck;
     private bool _building;
@@ -192,11 +191,8 @@ public sealed partial class DamageViewModel : ObservableObject
         BuildCounts();
     }
 
-    public void SetSeries(IReadOnlyList<Serie> series)
-    {
-        _series = series;
-        Picked = null;
-    }
+    /// <summary>The cards were (re)loaded: the picked deck was matched to the old ones.</summary>
+    public void CardsChanged() => Picked = null;
 
     public ObservableCollection<DeckItem> OwnDecks { get; } = [];
     public ObservableCollection<DeckItem> AiDecks { get; } = [];
@@ -307,7 +303,7 @@ public sealed partial class DamageViewModel : ObservableObject
     private void Pick(DeckFile file)
     {
         _building = true;
-        _deck = new CardIndex(_series).ResolveDeck(file.Name, file.Date, file.Codes);
+        _deck = _main.CardIndex.ResolveDeck(file.Name, file.Date, file.Codes);
         var unique = _deck.Cards.ToList();
         CardSorting.SortForDeck(unique);
         unique = unique.DistinctBy(c => c.Key).Where(c => c.Type != CardType.Event).ToList();
