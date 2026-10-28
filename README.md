@@ -264,6 +264,8 @@ beta (0.2.0) :
 - Added a damage calculator screen: set up three attackers, two backrow characters and a climax from a deck, with their effects, and simulate the damage dealt against a given opponent deck
 - Added deck list sorting by date and name
 - Rewrite of the tool in C# using Avalonia
+- Optimizations 
+- Card count in deck view is now in bold
 
 0.1.3 : 
 
