@@ -1,0 +1,86 @@
+<!--
+  Material 3 colour roles, light and dark (the baseline purple scheme). Views use these roles
+  ({DynamicResource Primary}…), never raw colours, so both themes follow.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="Primary" Color="#6750A4" />
+      <SolidColorBrush x:Key="OnPrimary" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="PrimaryContainer" Color="#EADDFF" />
+      <SolidColorBrush x:Key="OnPrimaryContainer" Color="#4F378B" />
+      <SolidColorBrush x:Key="SecondaryContainer" Color="#E8DEF8" />
+      <SolidColorBrush x:Key="OnSecondaryContainer" Color="#4A4458" />
+      <SolidColorBrush x:Key="TertiaryContainer" Color="#FFD8E4" />
+      <SolidColorBrush x:Key="OnTertiaryContainer" Color="#633B48" />
+      <SolidColorBrush x:Key="Error" Color="#B3261E" />
+      <SolidColorBrush x:Key="ErrorContainer" Color="#F9DEDC" />
+      <SolidColorBrush x:Key="OnErrorContainer" Color="#8C1D18" />
+      <SolidColorBrush x:Key="Surface" Color="#FEF7FF" />
+      <SolidColorBrush x:Key="OnSurface" Color="#1D1B20" />
+      <SolidColorBrush x:Key="OnSurfaceVariant" Color="#49454F" />
+      <SolidColorBrush x:Key="SurfaceContainerLowest" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SurfaceContainerLow" Color="#F7F2FA" />
+      <SolidColorBrush x:Key="SurfaceContainer" Color="#F3EDF7" />
+      <SolidColorBrush x:Key="SurfaceContainerHigh" Color="#ECE6F0" />
+      <SolidColorBrush x:Key="SurfaceContainerHighest" Color="#E6E0E9" />
+      <SolidColorBrush x:Key="Outline" Color="#79747E" />
+      <SolidColorBrush x:Key="OutlineVariant" Color="#CAC4D0" />
+      <SolidColorBrush x:Key="InverseSurface" Color="#322F35" />
+      <SolidColorBrush x:Key="InverseOnSurface" Color="#F5EFF7" />
+      <SolidColorBrush x:Key="InversePrimary" Color="#D0BCFF" />
+      <SolidColorBrush x:Key="Success" Color="#2E7D32" />
+      <SolidColorBrush x:Key="Warning" Color="#B26A00" />
+      <!-- Hover and press layers: on-surface at 8% and 12%. -->
+      <SolidColorBrush x:Key="HoverLayer" Color="#141D1B20" />
+      <SolidColorBrush x:Key="PressLayer" Color="#1F1D1B20" />
+      <SolidColorBrush x:Key="PrimaryHoverLayer" Color="#146750A4" />
+      <SolidColorBrush x:Key="Scrim" Color="#66000000" />
+      <!-- Card colours, as chips and dots show them. -->
+      <SolidColorBrush x:Key="CardYellow" Color="#C79100" />
+      <SolidColorBrush x:Key="CardBlue" Color="#1E63D6" />
+      <SolidColorBrush x:Key="CardRed" Color="#D32F2F" />
+      <SolidColorBrush x:Key="CardGreen" Color="#2E7D32" />
+      <SolidColorBrush x:Key="CardPurple" Color="#8E24AA" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="Primary" Color="#D0BCFF" />
+      <SolidColorBrush x:Key="OnPrimary" Color="#381E72" />
+      <SolidColorBrush x:Key="PrimaryContainer" Color="#4F378B" />
+      <SolidColorBrush x:Key="OnPrimaryContainer" Color="#EADDFF" />
+      <SolidColorBrush x:Key="SecondaryContainer" Color="#4A4458" />
+      <SolidColorBrush x:Key="OnSecondaryContainer" Color="#E8DEF8" />
+      <SolidColorBrush x:Key="TertiaryContainer" Color="#633B48" />
+      <SolidColorBrush x:Key="OnTertiaryContainer" Color="#FFD8E4" />
+      <SolidColorBrush x:Key="Error" Color="#F2B8B5" />
+      <SolidColorBrush x:Key="ErrorContainer" Color="#8C1D18" />
+      <SolidColorBrush x:Key="OnErrorContainer" Color="#F9DEDC" />
+      <SolidColorBrush x:Key="Surface" Color="#141218" />
+      <SolidColorBrush x:Key="OnSurface" Color="#E6E0E9" />
+      <SolidColorBrush x:Key="OnSurfaceVariant" Color="#CAC4D0" />
+      <SolidColorBrush x:Key="SurfaceContainerLowest" Color="#0F0D13" />
+      <SolidColorBrush x:Key="SurfaceContainerLow" Color="#1D1B20" />
+      <SolidColorBrush x:Key="SurfaceContainer" Color="#211F26" />
+      <SolidColorBrush x:Key="SurfaceContainerHigh" Color="#2B2930" />
+      <SolidColorBrush x:Key="SurfaceContainerHighest" Color="#36343B" />
+      <SolidColorBrush x:Key="Outline" Color="#938F99" />
+      <SolidColorBrush x:Key="OutlineVariant" Color="#49454F" />
+      <SolidColorBrush x:Key="InverseSurface" Color="#E6E0E9" />
+      <SolidColorBrush x:Key="InverseOnSurface" Color="#322F35" />
+      <SolidColorBrush x:Key="InversePrimary" Color="#6750A4" />
+      <SolidColorBrush x:Key="Success" Color="#81C995" />
+      <SolidColorBrush x:Key="Warning" Color="#FFB74D" />
+      <SolidColorBrush x:Key="HoverLayer" Color="#14E6E0E9" />
+      <SolidColorBrush x:Key="PressLayer" Color="#1FE6E0E9" />
+      <SolidColorBrush x:Key="PrimaryHoverLayer" Color="#14D0BCFF" />
+      <SolidColorBrush x:Key="Scrim" Color="#99000000" />
+      <SolidColorBrush x:Key="CardYellow" Color="#FFD54F" />
+      <SolidColorBrush x:Key="CardBlue" Color="#82B1FF" />
+      <SolidColorBrush x:Key="CardRed" Color="#FF8A80" />
+      <SolidColorBrush x:Key="CardGreen" Color="#81C995" />
+      <SolidColorBrush x:Key="CardPurple" Color="#E1A6F0" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+  <SolidColorBrush x:Key="CardNoColor" Color="#9E9E9E" />
+</ResourceDictionary>

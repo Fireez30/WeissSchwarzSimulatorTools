@@ -1,0 +1,229 @@
+<!--
+  The card browser: a serie (or one of its sets) as a grid or a list, with a search field, filter
+  chips and a pane showing the hovered card. It is the Cards screen, and the deck editor shows it
+  with the deck being built on the right (SideContent).
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SimuDeckParser.App.ViewModels"
+             xmlns:v="using:SimuDeckParser.App.Views"
+             xmlns:ctl="using:SimuDeckParser.App.Controls"
+             xmlns:core="using:SimuDeckParser"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="SimuDeckParser.App.Views.CardBrowserView"
+             x:DataType="vm:CardBrowserViewModel"
+             x:Name="Root">
+  <DockPanel>
+    <!-- Top bar: title, serie and set pickers, search and view toggles. -->
+    <DockPanel DockPanel.Dock="Top" Margin="20,12" LastChildFill="True">
+      <TextBlock Classes="headline" Text="{Binding Title}" VerticalAlignment="Center" Margin="0,0,16,0" DockPanel.Dock="Left" />
+      <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Left" IsVisible="{Binding HasSerie}">
+        <Button Name="SeriePicker" Classes="field" Width="280" ToolTip.Tip="Serie">
+          <DockPanel>
+            <mi:MaterialIcon Kind="ChevronDown" Width="18" Height="18" DockPanel.Dock="Right" />
+            <TextBlock Text="{Binding SerieName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          </DockPanel>
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedLeft" Opened="OnSerieFlyoutOpened">
+              <StackPanel Width="300" Spacing="6">
+                <TextBox Name="SerieSearch" Watermark="Find a serie" Text="{Binding SerieQuery}" />
+                <ListBox Classes="plain" MaxHeight="420" ItemsSource="{Binding SerieMatches}" SelectionChanged="OnSeriePicked">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:Serie">
+                      <TextBlock Text="{Binding Name}" Padding="10,6" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+        <ComboBox Width="220" ItemsSource="{Binding Sets}" SelectedItem="{Binding Set}" IsVisible="{Binding HasSeveralSets}" ToolTip.Tip="Set" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="4" DockPanel.Dock="Right" VerticalAlignment="Center">
+        <Panel>
+          <ToggleButton Classes="icon" IsChecked="{Binding ShowFilters}" ToolTip.Tip="Show or hide the filters">
+            <mi:MaterialIcon Kind="FilterVariant" />
+          </ToggleButton>
+          <Ellipse Width="8" Height="8" Fill="{DynamicResource Error}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0"
+                   IsVisible="{Binding IsFiltered}" IsHitTestVisible="False" />
+        </Panel>
+        <ToggleButton Classes="icon" IsChecked="{Binding IsGrid, Mode=OneWay}" Command="{Binding ShowGridCommand}" ToolTip.Tip="Grid view">
+          <mi:MaterialIcon Kind="ViewGrid" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" IsChecked="{Binding IsList, Mode=OneWay}" Command="{Binding ShowListCommand}" ToolTip.Tip="List view">
+          <mi:MaterialIcon Kind="ViewList" />
+        </ToggleButton>
+      </StackPanel>
+      <TextBox Name="Search" Classes="search" Text="{Binding Search}" Watermark="Search name, code or text  (Ctrl+F)"
+               MaxWidth="360" MinWidth="160" HorizontalAlignment="Right" Margin="8,0">
+        <TextBox.InnerLeftContent>
+          <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Classes="muted" Margin="10,0,0,0" />
+        </TextBox.InnerLeftContent>
+      </TextBox>
+    </DockPanel>
+
+    <!-- Filters, on the left. -->
+    <Border DockPanel.Dock="Left" Width="280" Margin="16,0,8,16" Classes="card" Padding="16,12"
+            IsVisible="{Binding ShowFilters}">
+      <ScrollViewer>
+        <StackPanel Spacing="4">
+          <DockPanel>
+            <Button Classes="text" DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearFiltersCommand}" IsEnabled="{Binding IsFiltered}" />
+            <TextBlock Classes="title" Text="Filters" VerticalAlignment="Center" />
+          </DockPanel>
+          <ItemsControl ItemsSource="{Binding FilterGroups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FilterGroupViewModel">
+                <StackPanel Margin="0,8,0,0">
+                  <TextBlock Classes="label muted" Text="{Binding Title}" Margin="0,0,0,6" />
+                  <ItemsControl ItemsSource="{Binding Chips}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ChipViewModel">
+                        <ToggleButton Classes="chip" IsChecked="{Binding IsPicked, Mode=OneWay}" Command="{Binding ClickCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="10" Height="10" Fill="{Binding Dot}" IsVisible="{Binding HasDot}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Label}" />
+                          </StackPanel>
+                        </ToggleButton>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <StackPanel IsVisible="{Binding HasTraits}" Margin="0,8,0,0" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="label muted" Text="Traits" VerticalAlignment="Center" />
+              <Border Classes="chip" Padding="8,0"><TextBlock Classes="label muted" FontSize="12" Text="{Binding Traits.Count, FallbackValue=''}" /></Border>
+            </StackPanel>
+            <TextBox Watermark="Find a trait" Text="{Binding TraitQuery}" IsVisible="{Binding HasTraitSearch}" />
+            <ItemsControl ItemsSource="{Binding Traits.Chips, FallbackValue={x:Null}}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ChipViewModel">
+                  <ToggleButton Classes="chip" IsChecked="{Binding IsPicked, Mode=OneWay}" Command="{Binding ClickCommand}"
+                                IsVisible="{Binding IsVisible}" Content="{Binding Label}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <!-- The deck being built (deck editor), on the right. -->
+    <ContentControl DockPanel.Dock="Right" Width="400" Margin="8,0,16,16" Content="{Binding #Root.SideContent}"
+                    IsVisible="{Binding #Root.SideContent, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+    <!-- The detail pane. -->
+    <v:DetailPaneView DockPanel.Dock="Right" Width="380" Margin="8,0,8,16" DataContext="{Binding Pane}"
+                      IsVisible="{Binding $parent[UserControl].((vm:CardBrowserViewModel)DataContext).ShowPane}" />
+
+    <!-- The cards. -->
+    <DockPanel Margin="8,0">
+      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsGrid}">
+          <TextBlock Classes="label muted" Text="Size" VerticalAlignment="Center" />
+          <Slider Width="140" Minimum="100" Maximum="240" Value="{Binding ThumbWidth}" ToolTip.Tip="Card size" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="titleMedium" Text="{Binding Heading}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Classes="label muted" Text="{Binding CountText}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Classes="bodySmall muted" TextWrapping="Wrap" Text="click a card to add it, right-click to remove it" IsVisible="{Binding PickHint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+      </DockPanel>
+      <Panel>
+        <!-- Nothing matches. -->
+        <StackPanel IsVisible="{Binding NoMatch}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+          <mi:MaterialIcon Kind="MagnifyClose" Width="48" Height="48" Foreground="{DynamicResource Outline}" />
+          <TextBlock Classes="title" Text="No matching cards" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" Text="{Binding NoMatchText}" HorizontalAlignment="Center" />
+          <Button Classes="tonal" HorizontalAlignment="Center" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding IsFiltered}" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="FilterVariantRemove" /><TextBlock Text="Clear filters" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel IsVisible="{Binding !HasSerie}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+          <mi:MaterialIcon Kind="CardsOutline" Width="48" Height="48" Foreground="{DynamicResource Outline}" />
+          <TextBlock Classes="title" Text="No cards" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" Text="No serie was found in the simulator folder." HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Grid: a virtualised list of rows. -->
+        <ListBox Name="Grid" Classes="plain" ItemsSource="{Binding Rows}" SizeChanged="OnGridSizeChanged">
+          <ListBox.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="IsGrid" />
+              <Binding Path="HasCards" />
+            </MultiBinding>
+          </ListBox.IsVisible>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:CardRow">
+              <ItemsControl ItemsSource="{Binding Tiles}" Margin="4,4,0,6">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CardTileViewModel">
+                    <ctl:CardThumb Card="{Binding Card}" Width="{Binding Width}" Height="{Binding Height}" DecodeWidth="{Binding DecodeWidth}"
+                                   Selected="{Binding Selected}" Copies="{Binding Copies}"
+                                   HoverCommand="{Binding #Root.((vm:CardBrowserViewModel)DataContext).HoverCommand}"
+                                   ClickCommand="{Binding #Root.((vm:CardBrowserViewModel)DataContext).ClickCommand}"
+                                   RightClickCommand="{Binding #Root.((vm:CardBrowserViewModel)DataContext).SecondaryClickCommand}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- List: one row per card, with its summary and text. -->
+        <ListBox Classes="plain" ItemsSource="{Binding Shown}">
+          <ListBox.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="IsList" />
+              <Binding Path="HasCards" />
+            </MultiBinding>
+          </ListBox.IsVisible>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:CardTileViewModel">
+              <Border Classes="card" Padding="12" Margin="0,0,8,8" Height="234">
+                <Grid ColumnDefinitions="150,12,2*,12,3*">
+                  <ctl:CardThumb Card="{Binding Card}" Width="150" Height="210" VerticalAlignment="Top" DecodeWidth="240"
+                                 Selected="{Binding Selected}" Copies="{Binding Copies}"
+                                 HoverCommand="{Binding #Root.((vm:CardBrowserViewModel)DataContext).HoverCommand}"
+                                 ClickCommand="{Binding #Root.((vm:CardBrowserViewModel)DataContext).ClickCommand}"
+                                 RightClickCommand="{Binding #Root.((vm:CardBrowserViewModel)DataContext).SecondaryClickCommand}" />
+                  <ScrollViewer Grid.Column="2" MaxWidth="400" HorizontalAlignment="Left">
+                    <StackPanel Spacing="4">
+                      <ctl:CardSummaryView Card="{Binding Card}" />
+                      <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPicking}" Margin="0,4,0,0">
+                        <Button Classes="tonal" Command="{Binding AddCommand}">
+                          <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="PlusThick" /><TextBlock Text="Add" /></StackPanel>
+                        </Button>
+                        <Button Classes="text" Command="{Binding RemoveCommand}" IsVisible="{Binding HasCopies}">
+                          <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="MinusThick" /><TextBlock Text="Remove" /></StackPanel>
+                        </Button>
+                      </StackPanel>
+                    </StackPanel>
+                  </ScrollViewer>
+                  <ScrollViewer Grid.Column="4">
+                    <ctl:EffectTextView Card="{Binding Card}" />
+                  </ScrollViewer>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Panel>
+    </DockPanel>
+  </DockPanel>
+</UserControl>

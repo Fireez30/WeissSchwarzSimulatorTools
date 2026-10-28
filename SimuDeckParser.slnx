@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SimuDeckParser.App.Tests/SimuDeckParser.App.Tests.csproj" />
+  <Project Path="SimuDeckParser.App/SimuDeckParser.App.csproj" />
+  <Project Path="SimuDeckParser.Core/SimuDeckParser.Core.csproj" />
+  <Project Path="SimuDeckParser.Tests/SimuDeckParser.Tests.csproj" />
+</Solution>

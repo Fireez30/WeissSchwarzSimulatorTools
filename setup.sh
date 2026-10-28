@@ -1,78 +1,38 @@
 #!/usr/bin/env bash
-# Installs what is needed to develop and test SimuDeckParser on Linux:
-# system packages (linker, windowing libraries, a software Vulkan driver for the
-# snapshot tests), the Rust toolchain through rustup, and the Windows
-# cross-compilation target used by `./build.sh windows`.
+# Installs what is needed to develop and test SimuDeckParser on Linux: the .NET 10 SDK, in
+# ~/.dotnet (no root needed, works on immutable distributions too), then the NuGet packages.
 #
-# Usage: ./setup.sh [--no-cross]
-#   --no-cross   skip the Windows cross-compilation target and MinGW
+# Usage: ./setup.sh
+#
+# Building the Windows version from Linux needs nothing more (./build.sh windows). The app
+# keeps the Encore Decks session in the Secret Service through libsecret, which desktop
+# distributions ship.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-cross=1
-for arg in "$@"; do
-    case "$arg" in
-        --no-cross) cross=0 ;;
-        -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-        *) echo "Unknown option: $arg" >&2; exit 1 ;;
-    esac
-done
-
-sudo=""
-if [ "$(id -u)" -ne 0 ]; then
-    sudo="sudo"
+if [ -n "${1:-}" ]; then
+    sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
 fi
 
-echo "==> Installing system packages"
-if command -v dnf >/dev/null; then
-    pkgs=(gcc pkgconf-pkg-config git curl zip
-          libxkbcommon libxkbcommon-x11 wayland-devel libX11 libXcursor libXrandr libXi
-          mesa-libEGL mesa-vulkan-drivers vulkan-loader)
-    [ "$cross" -eq 1 ] && pkgs+=(mingw64-gcc mingw64-gcc-c++)
-    $sudo dnf install -y "${pkgs[@]}"
-elif command -v apt-get >/dev/null; then
-    pkgs=(build-essential pkg-config git curl zip
-          libxkbcommon0 libxkbcommon-x11-0 libwayland-client0 libx11-6 libxcursor1 libxrandr2 libxi6
-          libegl1 mesa-vulkan-drivers libvulkan1)
-    [ "$cross" -eq 1 ] && pkgs+=(mingw-w64)
-    $sudo apt-get update
-    $sudo apt-get install -y "${pkgs[@]}"
-elif command -v pacman >/dev/null; then
-    pkgs=(base-devel pkgconf git curl zip
-          libxkbcommon libxkbcommon-x11 wayland libx11 libxcursor libxrandr libxi
-          mesa vulkan-swrast vulkan-icd-loader)
-    [ "$cross" -eq 1 ] && pkgs+=(mingw-w64-gcc)
-    $sudo pacman -S --needed --noconfirm "${pkgs[@]}"
-else
-    echo "Unsupported package manager: install a C toolchain (gcc), git, curl, zip," >&2
-    echo "libxkbcommon, Wayland/X11 client libraries and a Vulkan driver yourself," >&2
-    echo "then run this script again with the packages already present." >&2
+export PATH="$HOME/.dotnet:$PATH" DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+
+if ! dotnet --list-sdks 2>/dev/null | grep -q '^10\.'; then
+    echo "==> Installing the .NET 10 SDK in ~/.dotnet"
+    script="$(mktemp)"
+    curl -sSL https://dot.net/v1/dotnet-install.sh -o "$script"
+    bash "$script" --channel 10.0 --install-dir "$HOME/.dotnet"
+    rm -f "$script"
 fi
 
-echo "==> Installing the Rust toolchain"
-fresh_rustup=0
-if ! command -v rustup >/dev/null; then
-    fresh_rustup=1
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-    # shellcheck source=/dev/null
-    . "$HOME/.cargo/env"
-fi
-rustup toolchain install stable --profile minimal --component rustfmt,clippy
-rustup default stable
-if [ "$cross" -eq 1 ]; then
-    rustup target add x86_64-pc-windows-gnu
-fi
-
-echo "==> Downloading crate dependencies"
-cargo fetch --locked
+echo "==> Downloading the NuGet packages"
+dotnet restore >/dev/null
 
 echo
-echo "Done. Next steps:"
-echo "  cargo run            # run a debug build"
-echo "  cargo test           # run the tests"
-echo "  ./build.sh           # build a release archive into dist/"
-echo "  ./install.sh         # build and install to ~/.local"
-if [ "$fresh_rustup" -eq 1 ]; then
-    echo
-    echo "Open a new terminal (or run '. \$HOME/.cargo/env') so cargo is on your PATH."
-fi
+echo "Done. Add ~/.dotnet to your PATH (e.g. in ~/.bashrc):"
+echo '  export PATH="$HOME/.dotnet:$PATH"'
+echo "Next steps:"
+echo "  dotnet run --project SimuDeckParser.App   # run a debug build"
+echo "  dotnet test                               # run the tests"
+echo "  ./build.sh                                # release archive in dist/"
+echo "  ./install.sh                              # build and install"

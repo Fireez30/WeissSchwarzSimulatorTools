@@ -1,0 +1,112 @@
+<!--
+  The Encore Deck screen: the linked account's decks on encoredecks.com, previewed with the loaded
+  cards and imported into the simulator.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SimuDeckParser.App.ViewModels"
+             xmlns:v="using:SimuDeckParser.App.Views"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="SimuDeckParser.App.Views.EncoreView"
+             x:DataType="vm:EncoreViewModel">
+  <Panel>
+    <!-- No account. -->
+    <StackPanel IsVisible="{Binding AccountPending}" VerticalAlignment="Top" HorizontalAlignment="Center" Spacing="8" Margin="0,88,0,0">
+      <Arc Classes="spinner" Width="28" Height="28" />
+      <TextBlock Classes="muted" Text="Reading the session from the system keyring…" />
+    </StackPanel>
+    <StackPanel IsVisible="{Binding NoAccount}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8" MaxWidth="480">
+      <mi:MaterialIcon Kind="AccountCircle" Width="48" Height="48" Foreground="{DynamicResource Outline}" />
+      <TextBlock Classes="title" Text="No account linked" HorizontalAlignment="Center" />
+      <TextBlock Classes="muted wrap" TextAlignment="Center"
+                 Text="Link your Encore Decks account in Settings to browse its decks and import them into the simulator." />
+    </StackPanel>
+
+    <DockPanel IsVisible="{Binding HasAccount}">
+      <!-- The account's decks. -->
+      <Border DockPanel.Dock="Left" Width="300" Margin="16,16,8,16" Classes="card" Padding="12">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0,0,0">
+              <TextBlock Classes="headline" Text="Encore Decks" />
+              <TextBlock Classes="label muted" Text="{Binding TotalText}" VerticalAlignment="Center" />
+              <Button Classes="icon" Command="{Binding RefreshCommand}" IsEnabled="{Binding CanRefresh}" ToolTip.Tip="Read the list again">
+                <mi:MaterialIcon Kind="Reload" />
+              </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0,0,0">
+              <mi:MaterialIcon Kind="AccountCircle" Width="16" Height="16" Classes="primary" />
+              <TextBlock Classes="bodySmall muted" Text="{Binding AccountName}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+              <Button Classes="icon" Command="{Binding PreviousPageCommand}" IsEnabled="{Binding CanGoBack}" ToolTip.Tip="Previous page">
+                <mi:MaterialIcon Kind="ArrowLeft" />
+              </Button>
+              <TextBlock Classes="label muted" Text="{Binding PageText}" VerticalAlignment="Center" />
+              <Button Classes="icon" Command="{Binding NextPageCommand}" IsEnabled="{Binding CanGoForward}" ToolTip.Tip="Next page">
+                <mi:MaterialIcon Kind="ArrowRight" />
+              </Button>
+            </StackPanel>
+          </StackPanel>
+          <Panel Margin="0,4,0,0">
+            <StackPanel IsVisible="{Binding Loading}" HorizontalAlignment="Center" Spacing="4" Margin="0,24,0,0">
+              <Arc Classes="spinner" HorizontalAlignment="Center" />
+              <TextBlock Classes="muted" Text="Reading your decks…" />
+            </StackPanel>
+            <TextBlock Classes="muted wrap" Margin="8,24" IsVisible="{Binding Failed}"
+                       Text="Could not read the list. Press the reload button above to try again." />
+            <TextBlock Classes="muted wrap" Margin="8,24" IsVisible="{Binding IsEmpty}" Text="This account has no decks yet." />
+            <ListBox Classes="plain rows" ItemsSource="{Binding Decks}" SelectedItem="{Binding Selected}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:AccountDeckItem">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Panel>
+        </DockPanel>
+      </Border>
+
+      <v:DetailPaneView DockPanel.Dock="Right" Width="380" Margin="8,16,16,16"
+                        DataContext="{Binding Preview.Pane, FallbackValue={x:Null}}"
+                        IsVisible="{Binding $parent[UserControl].((vm:EncoreViewModel)DataContext).HasPreview}" />
+
+      <!-- The previewed deck. -->
+      <Panel Margin="12,16,8,0">
+        <StackPanel IsVisible="{Binding NothingPicked}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8" MaxWidth="520">
+          <mi:MaterialIcon Kind="CloudDownload" Width="48" Height="48" Foreground="{DynamicResource Outline}" />
+          <TextBlock Classes="title" Text="Pick a deck" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted wrap" TextAlignment="Center"
+                     Text="Choose one of your decks on the left to see its cards, then import it into the simulator." />
+        </StackPanel>
+        <StackPanel IsVisible="{Binding Previewing}" HorizontalAlignment="Center" Spacing="8" Margin="0,64,0,0">
+          <Arc Classes="spinner" Width="28" Height="28" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" Text="Reading the deck…" />
+        </StackPanel>
+        <ScrollViewer IsVisible="{Binding HasPreview}">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="headline wrap" Text="{Binding Resolved.Name, FallbackValue=''}" />
+            <TextBlock Classes="muted" Text="{Binding SavedText}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="filled" Command="{Binding ImportCommand}" IsEnabled="{Binding CanImport}"
+                      ToolTip.Tip="Save this deck as a new file in the simulator's Decks folder; existing decks are never overwritten">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Download" /><TextBlock Text="Import" /></StackPanel>
+              </Button>
+              <Button Classes="outlined" Command="{Binding OpenOnSiteCommand}" ToolTip.Tip="Open this deck in your browser">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="OpenInNew" /><TextBlock Text="Open on the site" /></StackPanel>
+              </Button>
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Importing}">
+                <TextBlock Classes="muted" Text="Importing…" VerticalAlignment="Center" />
+                <Arc Classes="spinner" />
+              </StackPanel>
+            </StackPanel>
+            <v:DeckPreviewView DataContext="{Binding Preview}" />
+          </StackPanel>
+        </ScrollViewer>
+      </Panel>
+    </DockPanel>
+  </Panel>
+</UserControl>

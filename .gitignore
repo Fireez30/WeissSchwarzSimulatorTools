@@ -1,4 +1,20 @@
-/target
+# .NET build output
+bin/
+obj/
+/obj-publish/
+TestResults/
+*.trx
+
+# Release packages (build.sh / build.ps1)
+/dist/
+
+# Leftover from the Rust version
+/target/
+
+# Editors / IDEs
+.vs/
+.vscode/
+.idea/
+*.user
 *.swp
 *~
-/dist

@@ -7,6 +7,7 @@
 #   default PREFIX is ~/.local
 set -euo pipefail
 cd "$(dirname "$0")"
+export PATH="$HOME/.dotnet:$PATH" DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
 name="simu_deck_parser"
 prefix="${PREFIX:-$HOME/.local}"
@@ -28,12 +29,15 @@ elif [ -n "${1:-}" ]; then
 fi
 
 echo "==> Building"
-cargo build --release --locked
+out="$(mktemp -d)"
+dotnet publish SimuDeckParser.App -c Release -r linux-x64 --self-contained \
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o "$out" >/dev/null
 
 echo "==> Installing to $prefix"
-$sudo install -Dm755 "target/release/$name" "$bin"
+$sudo install -Dm755 "$out/SimuDeckParser" "$bin"
+rm -rf "$out"
 tmp="$(mktemp)"
-cat > "$tmp" <<EOF
+cat > "$tmp" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=SimuDeckParser
@@ -41,7 +45,7 @@ Comment=Browse cards and build decks for the Weiss Schwarz Simulator
 Exec=$bin
 Terminal=false
 Categories=Game;CardGame;
-EOF
+DESKTOP
 $sudo install -Dm644 "$tmp" "$desktop"
 rm -f "$tmp"
 command -v update-desktop-database >/dev/null && $sudo update-desktop-database -q "$prefix/share/applications" || true
