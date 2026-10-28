@@ -1,299 +1,211 @@
 # How SimuDeckParser is built
 
-A guided tour of the code, for developers who know how to program but not necessarily Rust.
-Read it top to bottom once; afterwards, the "Where is…?" table is the quickest way in.
+A guided tour of the code. Read it top to bottom once; afterwards, the "Where is…?" table is the
+quickest way in.
 
-The tool was first written in C++ with Qt, then ported to Rust. A few comments mention "the
-original tool": they explain why some behaviour (such as the order card code spellings are
+The tool was first written in C++ with Qt, then ported to Rust, then to C#. A few comments mention
+"the original tool": they explain why some behaviour (such as the order card code spellings are
 tried in) was kept exactly as it was.
 
 ## The big picture
 
 The program reads the files of a Weiss Schwarz Simulator install (cards, decks, sleeves) and
 shows them in a window. It can also build and edit decks, import and publish decks on
-[encoredecks.com](https://www.encoredecks.com), and print decks as PDFs.
+[encoredecks.com](https://www.encoredecks.com), print decks as PDFs and simulate the damage of
+a turn.
 
-The code is split in two halves:
+The code is split in three projects (`SimuDeckParser.slnx` ties them together):
 
-| Half        | Files                                                   | Contains                         |
-|-------------|---------------------------------------------------------|----------------------------------|
-| The library | `src/lib.rs`, `src/*.rs`, `src/simulator/`, `src/encoredecks/`, `src/pdf/` | Everything that is not drawing: file formats, deck rules, network, PDFs. Unit-tested. |
-| The app     | `src/main.rs`, `src/app/`                               | The window, built with [egui](https://github.com/emilk/egui). |
+| Project                  | Contains                                                                  |
+|--------------------------|---------------------------------------------------------------------------|
+| `SimuDeckParser.Core`    | Everything that is not drawing: file formats, deck rules, network, PDFs, the damage simulator. No UI code. |
+| `SimuDeckParser.App`     | The window, built with [Avalonia](https://avaloniaui.net) (XAML views and their view models). |
+| `SimuDeckParser.Tests`   | The tests of the library (xUnit).                                         |
+| `SimuDeckParser.App.Tests` | Renders every screen to PNG files, in both themes (Avalonia headless).  |
 
 The app calls the library; the library never calls the app. When you change *what the program
-does* (a file format, a matching rule), it is almost always in the library; when you change
-*how it looks or reacts*, it is in `src/app/`.
+does* (a file format, a matching rule), it is almost always in Core; when you change *how it
+looks or reacts*, it is in App.
+
+Settings shared by every project (target framework, version) are in `Directory.Build.props`.
 
 ## Where is…?
 
 ```text
-src/
-├── lib.rs                  The library's table of contents.
-├── model.rs                The data types: Card, Set, Serie, Deck, Color, CardType, Trigger.
-├── text.rs                 Decoding text files, the card text markup (<b>, <sprite…>), quoted names.
-├── card_codes.rs           The many spellings of a card code (KS/W49-001 vs KS/W49-E001…).
-├── card_index.rs           Finding loaded cards by code (CardIndex) or by name (NameIndex).
-├── filters.rs              The card list's filters, and the two sort orders.
-├── deck_builder.rs         A deck being built (DeckList) and the deck rules (50 cards, 4 copies…).
-├── damage_sim.rs           The damage calculator: playing a turn of attacks many times.
-├── settings.rs             The settings file, and every key it holds.
-├── fonts.rs                The fonts compiled into the program.
-├── simulator/              The simulator's install folder:
-│   ├── folder.rs             where each kind of file lives; finding installs on this computer
-│   ├── series_file.rs        SingleSetData.txt: the series and their sets
-│   ├── card_file.rs          CardData.txt: the cards of a set
-│   ├── common_effects.rs     effect texts shared by many cards
-│   ├── card_images.rs        finding a card's picture
-│   ├── deck_files.rs         reading and writing decks
-│   └── sleeves.rs            sleeve images, and adding new ones
-├── encoredecks/            encoredecks.com:
-│   ├── decks.rs              reading decks, importing them into the simulator
-│   ├── upload.rs             publishing a deck
-│   ├── account.rs            signing in, checking a session
-│   └── credentials.rs        keeping the session in the system's credential store
-├── pdf/                    Printable PDFs: mod.rs lays out proxies and translation sheets,
-│                           document.rs / font.rs / artwork.rs do the drawing.
-├── main.rs                 Opens the window.
-└── app/                    The window:
-    ├── mod.rs                App: the state of the whole window, drawing a frame, navigation.
-    ├── background.rs         Task: running slow work on another thread.
-    ├── setup_screen.rs       First screen: picking the simulator folder, loading the cards.
-    ├── card_browser.rs       The Cards screen (also used inside the deck editor).
-    ├── card_view/            Showing one card: summary, effect text, detail pane, related cards.
-    ├── decks_screen/         The Decks screen, and its Import / Upload / PDF dialogs.
-    ├── deck_editor.rs        Building or editing a deck.
-    ├── deck_preview.rs       An open deck's stats and card groups (Decks and Encore screens).
-    ├── sleeve_picker.rs      The sleeve picker popup.
-    ├── encore_screen.rs      The Encore Deck screen: the linked account's decks.
-    ├── damage_screen.rs      The Damage screen: setting up a turn and simulating its damage.
-    ├── settings_screen.rs    The Settings screen.
-    ├── account.rs            Linking the Encore Decks account (Settings).
-    ├── theme/                Colours, fonts and the Material 3 components (buttons, chips…).
-    ├── assets.rs             The icons compiled into the program.
-    └── screenshots.rs        A test that clicks through every screen and saves screenshots.
-tests/simulator.rs          End-to-end test on a fake simulator folder.
+SimuDeckParser.Core/
+├── Model.cs                The data types: Card, CardSet, Serie, Deck, CardColor, CardType, Trigger.
+├── Text.cs                 Decoding text files, the card text markup (<b>, <sprite…>), quoted names.
+├── CardCodes.cs            The many spellings of a card code (KS/W49-001 vs KS/W49-E001…).
+├── CardIndex.cs            Finding loaded cards by code (CardIndex) or by name (NameIndex).
+├── Filters.cs              The card list's filters, and the two sort orders.
+├── DeckBuilder.cs          A deck being built (DeckList) and the deck rules (50 cards, 4 copies…).
+├── DamageSim.cs            The damage calculator: playing a turn of attacks many times.
+├── Settings.cs             The settings file, and every key it holds.
+├── Fonts.cs                The fonts compiled into the program.
+├── Errors.cs               UserException: errors with a message meant for the user.
+├── Http.cs                 The HTTP clients (one never follows redirects: see Encore Decks).
+├── Simulator/              The simulator's install folder:
+│   ├── SimulatorFolder.cs    where each kind of file lives; finding installs; loading every card
+│   ├── SeriesFile.cs         SingleSetData.txt: the series and their sets
+│   ├── CardFile.cs           CardData.txt: the cards of a set
+│   ├── CommonEffects.cs      effect texts shared by many cards
+│   ├── CardImages.cs         finding a card's picture
+│   ├── DeckFiles.cs          reading and writing decks
+│   └── Sleeves.cs            sleeve images, and adding new ones
+├── EncoreDecks/            encoredecks.com:
+│   ├── Decks.cs              reading decks, importing them into the simulator
+│   ├── Upload.cs             publishing a deck
+│   ├── AccountApi.cs         signing in, checking a session
+│   └── Credentials.cs        keeping the session in the system's credential store
+└── Pdf/                    Printable PDFs: Printouts.cs lays out proxies and translation sheets,
+                            Document.cs (PDFsharp) and Artwork.cs (SkiaSharp) do the drawing.
+
+SimuDeckParser.App/
+├── Program.cs              Opens the window; the embedded fonts.
+├── App.axaml               The theme: Fluent, Material icons, our colours and components.
+├── Theme/Colors.axaml      The Material 3 colour roles, light and dark.
+├── Theme/Material.axaml    The components: filled/tonal/outlined/text buttons, chips, cards…
+├── Controls/               Controls made in code: CardThumb (a card picture), CardViews (a card's
+│                           summary and effect text), RelatedCards (window), Pictures (image cache).
+├── ViewModels/             The state of each screen, and what its buttons do:
+│   ├── MainViewModel.cs      the window: screens, loading the simulator, notices, dialogs, theme
+│   ├── SetupViewModel.cs     first screen: picking the simulator folder
+│   ├── CardBrowserViewModel.cs  the Cards screen (also used inside the deck editor)
+│   ├── DetailPaneViewModel.cs   the pane showing one card (hovered or pinned)
+│   ├── DecksViewModel.cs     the Decks screen
+│   ├── DeckEditorViewModel.cs   building or editing a deck
+│   ├── DeckPreviewViewModel.cs  an open deck's stats and card groups (Decks and Encore screens)
+│   ├── DeckDialogs.cs        Import, Upload and PDF dialogs
+│   ├── SleevePickerViewModel.cs the sleeve picker popup
+│   ├── EncoreViewModel.cs    the Encore Deck screen: the linked account's decks
+│   ├── DamageViewModel.cs    the Damage screen
+│   └── AccountViewModel.cs   linking the Encore Decks account (Settings)
+└── Views/                  The XAML of each screen and dialog, one file per view model.
 ```
 
 ## How the data flows
 
-**Startup.** `App::with_settings` (`app/mod.rs`) reads the settings. If a simulator folder is
-saved, it starts loading it; otherwise the setup screen asks for one, and looks for installs on
-the computer in the background (`simulator::folder::detect_installs`).
+**Startup.** `MainViewModel`'s constructor reads the settings. If a simulator folder is saved,
+it starts loading it; otherwise the setup screen asks for one, and looks for installs on the
+computer in the background (`SimulatorFolder.DetectInstalls`).
 
-**Loading the cards.** `simulator::load_series` reads every `SingleSetData.txt` and
-`CardData.txt` of the install (series are parsed in parallel, one thread per CPU core) and
-returns a `Vec<Serie>`: every card, grouped by serie and set. The app keeps it as
-`Arc<Vec<Serie>>`, shared by all screens (see "Ownership" below for `Arc`).
+**Loading the cards.** `SimulatorFolder.LoadSeries` reads every `SingleSetData.txt` and
+`CardData.txt` of the install (series are parsed in parallel with PLINQ) and returns a
+`List<Serie>`: every card, grouped by serie and set. `MainViewModel.Series` keeps it, and hands
+it to every screen.
 
-**Opening a deck.** A deck file only holds card codes (`deck_files::DeckFile`). To show it, the
-codes are matched to loaded cards with `CardIndex::resolve_deck`, which tries the other
-spellings of each code (`card_codes.rs`) and returns a `model::Deck`: its cards, plus the codes
-that matched nothing (`Deck::unmatched`). `deck_preview::Summary` then counts types, levels,
-colours and triggers for the stat tiles.
+**Opening a deck.** A deck file only holds card codes (`DeckFile`). To show it, the codes are
+matched to loaded cards with `CardIndex.ResolveDeck`, which tries the other spellings of each
+code (`CardCodes`) and returns a `Deck`: its cards, plus the codes that matched nothing
+(`Deck.Unmatched`). `DeckPreviewViewModel` then counts types, levels, colours and triggers for
+the stat tiles.
 
-**Importing from Encore Decks.** `encoredecks::decks::import` downloads the deck's JSON, matches
-its codes the same way, and saves it with `deck_files::save_new_deck`, which never overwrites a
-file (a taken name gets a ` (2)` suffix).
+**Importing from Encore Decks.** `Decks.ImportAsync` downloads the deck's JSON, matches its
+codes the same way, and saves it with `DeckFiles.SaveNew`, which never overwrites a file (a
+taken name gets a ` (2)` suffix).
 
-**Uploading.** `encoredecks::upload::upload` looks every card up on the site (it stores decks as
-its own card ids), and publishes nothing unless all 50 cards were found.
+**Uploading.** `Upload.UploadAsync` looks every card up on the site (it stores decks as its own
+card ids), and publishes nothing unless all 50 cards were found.
 
-**Simulating damage.** The Damage screen builds a `damage_sim::Turn` (the soul of the three
-characters on stage, the sources of damage in order, the trigger cards left in the player's deck,
-and the levels of the deck minus the stage and the climax for Musashi effects) and an `Opponent`
-(their deck, waiting room, stock, level and clock), then runs `damage_sim::simulate` in a
-background task. Nothing is read from the cards' texts: the user enters the soul and the damage.
-The result is a histogram of the total damage, from which the screen shows the average, the
-chance to kill and the chance of each total.
+**Simulating damage.** The Damage screen builds a `Turn` (the soul of the three characters on
+stage, the sources of damage in order, the trigger cards left in the player's deck, and the
+levels of the deck minus the stage and the climax for Musashi effects) and an `Opponent`, then
+runs `Simulator.Simulate` in the background. The result is a histogram of the total damage, from
+which the screen shows the average, the chance to kill and the chance of each total.
 
-**Printing.** `pdf::proxies` and `pdf::translation` build the PDF bytes; the export dialog
-writes them to the Downloads folder.
+**Printing.** `Printouts.Proxies` and `Printouts.Translation` build the PDF bytes; the export
+dialog writes them to the Downloads folder.
 
 ## How the window works
 
-### Immediate mode
+### Views and view models (MVVM)
 
-egui is an *immediate mode* UI library. There are no button objects that you create once and
-attach callbacks to. Instead, the whole window is drawn again on every frame, by
-`App::ui` (`app/mod.rs`), from the app's state:
+Each screen is a pair: a **view model** (`ViewModels/`, plain C#) holds its state and its
+actions, and a **view** (`Views/`, XAML) draws it. The view never changes the state itself: it
+*binds* to the view model's properties and commands.
 
-```rust
-if theme::filled(None, "Save").show(ui).clicked() {
-    self.save();
-}
+```xml
+<TextBox Text="{Binding Search}" />
+<Button Classes="filled" Command="{Binding SaveCommand}" Content="Save" />
 ```
 
-`show(ui)` draws the button *for this frame* and returns a `Response` that says whether it was
-clicked. So each screen is a plain struct holding its state (the open deck, the search text…)
-with a `show(&mut self, ui, …)` method that draws it and reacts to clicks. Text fields are bound
-to a `String` of the state, which egui edits in place.
+The view models use [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/):
 
-### Acting after drawing
+```csharp
+[ObservableProperty]
+private string _search = "";              // generates the Search property, which tells the view when it changes
 
-You will often see this pattern:
+partial void OnSearchChanged(string value) => Refilter();   // runs after each change
 
-```rust
-let mut clicked = None;
-theme::list_pane(ui, "deck_list", |ui| clicked = self.deck_list(ui));
-if let Some(path) = clicked {
-    self.pick(&path);
-}
+[RelayCommand]
+private void Save() { … }                 // generates SaveCommand, for buttons
 ```
 
-The click is noted in a variable, and acted on after the drawing code. This is because of
-Rust's borrowing rules (see below): while the closure `|ui| …` uses part of `self`, the rest of
-the code cannot modify `self` at the same time. Collecting first and acting after avoids the
-conflict, and keeps drawing and state changes apart.
+A property computed from others (`public bool CanSave => …`) is refreshed in the view with
+`OnPropertyChanged(nameof(CanSave))`, or `[NotifyPropertyChangedFor(nameof(CanSave))]` on the
+fields it depends on.
+
+Bindings are compiled (`x:DataType` on each view): a typo in a property name is a build error.
 
 ### Slow work
 
-Anything slow (the network, reading all the cards, writing a PDF) must not run inside `ui`,
-or the window would freeze. It runs on a background thread with `background::Task`:
+Anything slow (the network, reading all the cards, writing a PDF) must not run on the UI thread,
+or the window would freeze. It runs with `await Task.Run(…)` in an `async` method; the code
+after the `await` is back on the UI thread, where it can update the view model:
 
-```rust
-// Start: in a field of the screen.
-self.importing = Some(Task::spawn(ctx, move || import(&link, &series, &dir)));
-
-// Every frame: once it is done, `finished` empties the field and returns the result.
-if let Some(result) = finished(&mut self.importing) {
-    match result {
-        Ok(deck) => …,
-        Err(e) => …,
-    }
-}
+```csharp
+Running = true;                                   // the view shows a spinner
+var deck = await Task.Run(() => Decks.ImportAsync(link, series, dir));
+Running = false;                                  // back on the UI thread
 ```
-
-While the field holds a task, screens show a spinner and disable the buttons that would start
-another one.
 
 ### Telling the user
 
-Screens do not show error dialogs themselves: they put a `Notice` (`app/mod.rs`) in their
-`notice` field, and the app picks it up at the end of the frame. `Notice::Info` becomes a
-snackbar at the bottom of the window; `Notice::Error` an error dialog. An error caused by an
-expired Encore Decks session also unlinks the account.
+Screens do not show error windows themselves: they call `MainViewModel.Notify`. `Notice.Info`
+becomes a snackbar at the bottom of the window; `Notice.Error` an error dialog. An error caused
+by an expired Encore Decks session also unlinks the account. Library errors meant for the user
+are `UserException`s: their message says what went wrong ("reading the deck: file not found").
 
-### Splitting `App` across files
+Dialogs (Import, Upload, PDF, confirmations) are view models derived from `DialogViewModel`,
+shown with `MainViewModel.ShowDialog`; `MainWindow.axaml` picks the view of each one by type.
 
-The `App` struct is defined in `app/mod.rs`, but some of its methods are in other files
-(`setup_screen.rs`, `settings_screen.rs`, `account.rs`): Rust allows an `impl App { … }` block
-in any file of the module, much like partial classes in C#. The Decks screen does the same with
-its dialogs.
+### Pictures
 
-## Rust in ten minutes, for this code base
-
-Only what you need to read this project; [the Rust book](https://doc.rust-lang.org/book/) has
-the rest.
-
-**Variables** are immutable unless declared `let mut`. Function parameters too: `&mut self`
-means the method may modify the struct, `&self` that it only reads it.
-
-**`Option<T>`** is a value that may be missing: `Some(value)` or `None`. Rust has no `null`.
-`Option<Account>` is "maybe an account".
-
-**`Result<T>`** is the outcome of something that can fail: `Ok(value)` or `Err(error)`. Errors
-are values, not exceptions. The `?` operator means "if this is an error, return it to my
-caller now":
-
-```rust
-let bytes = std::fs::read(path)?; // returns the error if the file can't be read
-```
-
-This project uses the [`anyhow`](https://docs.rs/anyhow) library for errors:
-`anyhow::Result<T>` can hold any error, `.context("reading the deck")` adds an explanation, and
-`format!("{e:#}")` prints the error with its explanations ("reading the deck: file not found").
-
-**`match`** is a `switch` that must handle every case; **`if let`** handles one case:
-
-```rust
-match result {
-    Ok(deck) => show(deck),
-    Err(e) => report(e),
-}
-if let Some(account) = &self.account { … } // runs only when there is an account
-let Some(deck) = picked else { return };   // "let-else": stop here when there is none
-```
-
-**Enums** can carry data in each variant: `Notice::Error { title, message, … }`,
-`Rich::Text(text, style)`. They are the Rust way to say "one of these shapes".
-
-**Structs and `impl`**: a struct holds data, an `impl` block adds its methods. `Self` is the
-type being implemented. `#[derive(Debug, Clone, Default)]` above a struct generates common code
-automatically (printing, copying, an empty value).
-
-**Traits** are interfaces. `card_browser::Picker` is one: the deck editor implements it, and
-the card browser calls it. `&mut dyn Picker` is "a reference to any type that implements
-`Picker`"; `impl FnOnce(&mut Ui)` as a parameter type means "any function or closure with this
-signature".
-
-**Closures** are anonymous functions: `|card| card.level` takes `card` and returns its level.
-`move || …` makes the closure take ownership of what it uses, which is required to send it to
-another thread.
-
-**Iterator chains** replace most loops over collections:
-
-```rust
-let names: Vec<String> = decks
-    .iter()                     // go over the decks
-    .filter(|d| !d.ai)          // keep the user's decks
-    .map(|d| d.name.clone())    // take their names
-    .collect();                 // gather them in a Vec
-```
-
-**Ownership and borrowing.** Every value has one owner, and is freed when its owner goes away.
-Other code *borrows* it with a reference: `&value` to read, `&mut value` to modify. The rule
-the compiler enforces is: many readers, or one writer, never both at once. That is why
-`.clone()` appears where two places need their own copy, and why the UI code collects clicks
-first and acts after drawing. `Arc<T>` is a shared, reference-counted pointer: it lets several
-owners (the app and its background threads) use the same cards without copying them.
-
-**Lifetimes** (`'a`, `'o`) are names for "how long a borrowed reference is valid". You can
-mostly ignore them when reading: `CardIndex<'a>` just means the index borrows the cards and
-must not outlive them.
-
-**Modules and visibility.** Each file is a module; `mod name;` declares a child module, `use`
-imports names. Items are private to their module unless marked `pub` (public), `pub(super)`
-(visible to the parent module), or `pub(crate)` / `pub(in crate::app)` (visible in that part of
-the program).
-
-**Macros** end with `!`: `format!("{name} has {n} cards")` builds a string (like f-strings),
-`include_bytes!("file")` embeds a file in the program at build time.
-
-**Tests** live next to the code, in a `#[cfg(test)] mod tests { … }` block at the end of each
-file; each `#[test]` function is one test. `#[ignore]` marks the slow ones (network, real
-install, screenshots), which only run when asked.
+Card pictures are read in the background and scaled down to the size they are shown at, by the
+attached property `ctl:Pictures.Path` on an `Image` (`Controls/Pictures.cs`), which keeps the
+last few hundred in a cache. The card grid is a virtualised list of rows: only the rows on
+screen exist, so a serie of a thousand cards scrolls smoothly.
 
 ## Building, running, testing
 
 ```sh
-cargo run                        # build and open the window
-cargo test                       # every fast test
-cargo test -- --ignored          # also the network, real-install and screenshot tests
-cargo clippy --all-targets       # the linter: should print no warning
-cargo fmt                        # format the code
+dotnet run --project SimuDeckParser.App                   # build and open the window
+dotnet test                                               # every test that needs nothing more
+SDP_LIVE_TESTS=1 dotnet test SimuDeckParser.Tests --filter Category=Live   # encoredecks.com and the system keyring
+SIMULATOR_ROOT=/path/to/simulator dotnet test SimuDeckParser.Tests --filter Category=RealInstall
+SIMULATOR_ROOT=/path/to/simulator SCREENSHOT_DIR=/some/dir dotnet test SimuDeckParser.App.Tests
 ```
 
-Useful variables for the ignored tests:
+The real-install, live and screenshot tests are skipped when their variable is not set. The real-install tests only read the simulator folder. The screenshot test renders every
+screen in both themes: run it before and after a change to compare.
 
-- `SIMULATOR_ROOT=/path/to/simulator` runs the real-install tests (read-only) and screenshots
-  on a real install instead of a fake one;
-- `SCREENSHOT_DIR=/some/dir` is where the screenshot test saves its pictures
-  (`target/screenshots` by default). It renders every screen in both themes: run it before and
-  after a change to compare.
+On Linux distributions without ICU (some immutable ones), run the SDK with
+`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` (the scripts do). The program itself never needs ICU:
+it only uses the invariant culture (`InvariantGlobalization` in `Directory.Build.props`). It
+needs no system fonts either: Noto Sans is embedded, and SkiaSharp is the build without
+fontconfig.
 
 ## Common changes
 
-- **A new setting:** add its key in `settings.rs`, read it in `App::with_settings`
-  (`app/mod.rs`), write it with `App::save_setting`.
-- **A button on the open deck:** add it in `DecksScreen::deck_page`
-  (`app/decks_screen/mod.rs`); if it opens something, add a `DeckAction` variant and handle it
-  after drawing, in `DecksScreen::show`.
-- **A card code that does not match:** the spellings tried are in `card_codes.rs`
-  (`key_variants` for the simulator, `encore_spellings` for Encore Decks); add a case to their
-  tests first.
-- **A card file line that is not read:** `simulator/card_file.rs`, function `parse_pass`.
-- **A colour or a size:** `app/theme/`. Screens use colour roles (`scheme(ui).primary`), never
-  raw colours.
+- **A new setting:** add its key in `Settings.cs`, read it in `MainViewModel`'s constructor,
+  write it with `MainViewModel.SaveSetting`.
+- **A button on the open deck:** add a `[RelayCommand]` method in `DecksViewModel`, and the
+  button in `Views/DecksView.axaml`.
+- **A card code that does not match:** the spellings tried are in `CardCodes.cs` (`KeyVariants`
+  for the simulator, `EncoreSpellings` for Encore Decks); add a case to their tests first.
+- **A card file line that is not read:** `Simulator/CardFile.cs`, method `ParsePass`.
+- **A colour or a size:** `Theme/`. Views use colour roles (`{DynamicResource Primary}`), never
+  raw colours, so both themes follow.
 
 ## Weiss Schwarz vocabulary
 

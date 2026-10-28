@@ -1,4 +1,9 @@
+bin/
+obj/
+/dist
 /target
 *.swp
 *~
-/dist
+.vs/
+.idea/
+*.user

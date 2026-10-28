@@ -1,0 +1,407 @@
+<!--
+  Material 3 components on top of Avalonia's Fluent theme. Use them with classes:
+
+  - text: headline, title, titleMedium, label, bodySmall, muted (on-surface-variant colour);
+  - Button: filled, tonal, outlined, text, icon (round), rail (navigation rail destination);
+  - ToggleButton: chip (filter chip), icon;
+  - Border: card (a rounded surface), chip (a static info chip), badge.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+  <!-- Typography. Text inherits the on-surface colour from the window. -->
+  <Style Selector="Window">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+  <Style Selector="TextBlock.headline">
+    <Setter Property="FontSize" Value="26" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="20" />
+  </Style>
+  <Style Selector="TextBlock.titleMedium">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="TextBlock.bodySmall, SelectableTextBlock.bodySmall">
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.muted">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="Foreground" Value="{DynamicResource Error}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.error">
+    <Setter Property="Foreground" Value="{DynamicResource Error}" />
+  </Style>
+  <Style Selector="TextBlock.primary">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.primary">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="TextBlock.success">
+    <Setter Property="Foreground" Value="{DynamicResource Success}" />
+  </Style>
+  <Style Selector="mi|MaterialIcon.success">
+    <Setter Property="Foreground" Value="{DynamicResource Success}" />
+  </Style>
+  <Style Selector="TextBlock.wrap, SelectableTextBlock.wrap">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- Surfaces -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerLow}" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerHigh}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+  <Style Selector="Border.outlinedChip">
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+  <Style Selector="Border.badge">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="MinWidth" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="6,0" />
+  </Style>
+  <Style Selector="Border.badge > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.textBox">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainer}" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="12" />
+  </Style>
+
+  <!-- Buttons: shared shape -->
+  <Style Selector="Button.filled, Button.tonal, Button.outlined, Button.text">
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.filled /template/ ContentPresenter, Button.tonal /template/ ContentPresenter, Button.outlined /template/ ContentPresenter, Button.text /template/ ContentPresenter">
+    <Setter Property="Transitions" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Button.filled mi|MaterialIcon, Button.tonal mi|MaterialIcon, Button.outlined mi|MaterialIcon, Button.text mi|MaterialIcon">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+  </Style>
+
+  <!-- Filled -->
+  <Style Selector="Button.filled">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+  </Style>
+  <Style Selector="Button.filled:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+    <Setter Property="Opacity" Value="0.92" />
+  </Style>
+  <Style Selector="Button.filled:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="Opacity" Value="0.85" />
+  </Style>
+
+  <!-- Tonal -->
+  <Style Selector="Button.tonal">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+  </Style>
+  <Style Selector="Button.tonal:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+    <Setter Property="Opacity" Value="0.88" />
+  </Style>
+  <Style Selector="Button.tonal:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+
+  <!-- Outlined -->
+  <Style Selector="Button.outlined">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Button.outlined:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryHoverLayer}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="Button.outlined:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryHoverLayer}" />
+  </Style>
+
+  <!-- Text -->
+  <Style Selector="Button.text">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+    <Setter Property="Padding" Value="12,0" />
+  </Style>
+  <Style Selector="Button.text:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryHoverLayer}" />
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="Button.text:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryHoverLayer}" />
+  </Style>
+  <Style Selector="Button.danger">
+    <Setter Property="Foreground" Value="{DynamicResource Error}" />
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource Error}" />
+  </Style>
+
+  <!-- Disabled buttons -->
+  <Style Selector="Button.filled:disabled /template/ ContentPresenter, Button.tonal:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    <Setter Property="Foreground" Value="{DynamicResource Outline}" />
+  </Style>
+  <Style Selector="Button.outlined:disabled /template/ ContentPresenter, Button.text:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+  </Style>
+
+  <!-- Icon buttons (Button or ToggleButton): 40px circles; checked = selected. -->
+  <Style Selector="Button.icon, ToggleButton.icon">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.icon.small, ToggleButton.icon.small">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="CornerRadius" Value="16" />
+  </Style>
+  <Style Selector="Button.icon mi|MaterialIcon, ToggleButton.icon mi|MaterialIcon">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+  </Style>
+  <Style Selector="Button.icon.small mi|MaterialIcon, ToggleButton.icon.small mi|MaterialIcon">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+  </Style>
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter, ToggleButton.icon:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+  <Style Selector="Button.icon:pressed /template/ ContentPresenter, ToggleButton.icon:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PressLayer}" />
+  </Style>
+  <Style Selector="ToggleButton.icon:checked /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="Button.icon:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource OutlineVariant}" />
+  </Style>
+
+  <!-- Filter chips: outlined, filled with the secondary container when checked. -->
+  <Style Selector="ToggleButton.chip">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Margin" Value="0,0,6,6" />
+  </Style>
+  <Style Selector="ToggleButton.chip:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:checked:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="Opacity" Value="0.88" />
+  </Style>
+
+  <!-- Navigation rail destinations: a pill around the icon, the label underneath. -->
+  <Style Selector="ToggleButton.rail">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Background="Transparent" Spacing="4">
+          <Border Name="Pill" Width="56" Height="32" CornerRadius="16" HorizontalAlignment="Center">
+            <ContentPresenter Name="Icon" Content="{TemplateBinding Content}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Foreground="{DynamicResource OnSurfaceVariant}" />
+          </Border>
+          <TextBlock Name="Label" Text="{TemplateBinding Tag}" FontSize="12" FontWeight="Medium"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                     Foreground="{DynamicResource OnSurfaceVariant}" />
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.rail mi|MaterialIcon">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+  </Style>
+  <Style Selector="ToggleButton.rail:pointerover /template/ Border#Pill">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+  </Style>
+  <Style Selector="ToggleButton.rail:checked /template/ Border#Pill">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+  </Style>
+  <Style Selector="ToggleButton.rail:checked /template/ ContentPresenter#Icon">
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+  </Style>
+  <Style Selector="ToggleButton.rail:checked /template/ TextBlock#Label">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+
+  <!-- Selectable list rows (navigation drawer style). -->
+  <Style Selector="ListBox.plain">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.plain ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0" />
+  </Style>
+  <Style Selector="ListBox.plain ListBoxItem:pointerover /template/ ContentPresenter, ListBox.plain ListBoxItem:selected /template/ ContentPresenter, ListBox.plain ListBoxItem:selected:pointerover /template/ ContentPresenter, ListBox.plain ListBoxItem:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.rows ListBoxItem">
+    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="Margin" Value="0,0,0,2" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="ListBox.rows ListBoxItem /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="28" />
+  </Style>
+  <Style Selector="ListBox.rows ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+  </Style>
+  <Style Selector="ListBox.rows ListBoxItem:selected /template/ ContentPresenter, ListBox.rows ListBoxItem:selected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+  </Style>
+  <Style Selector="ListBox.rows ListBoxItem:selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+  </Style>
+
+  <!-- Text fields -->
+  <Style Selector="TextBox">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Padding" Value="12,6" />
+  </Style>
+  <Style Selector="TextBox.search">
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerHigh}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,6" />
+  </Style>
+  <Style Selector="TextBox.search:pointerover /template/ Border#PART_BorderElement, TextBox.search:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerHighest}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <!-- Buttons that open a picker (serie, sleeve): drawn like a combo box. -->
+  <Style Selector="Button.field, ToggleButton.field">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="12,0,8,0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.field:pointerover /template/ ContentPresenter, ToggleButton.field:pointerover /template/ ContentPresenter, ToggleButton.field:checked /template/ ContentPresenter, Button.field:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OnSurface}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="40" />
+  </Style>
+
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource InverseSurface}" />
+    <Setter Property="Foreground" Value="{DynamicResource InverseOnSurface}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ToolTip TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InverseOnSurface}" />
+  </Style>
+  <!-- Rich tooltips (card previews) keep the surface colours. -->
+  <Style Selector="ToolTip.rich">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerHigh}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="12" />
+    <Setter Property="MaxWidth" Value="340" />
+  </Style>
+  <Style Selector="ToolTip.rich TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+  <Style Selector="ToolTip.rich TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+
+  <Style Selector="Slider">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="ProgressBar">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+</Styles>

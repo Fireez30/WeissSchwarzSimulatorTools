@@ -1,0 +1,49 @@
+<!-- The PDF dialogs (Proxies, Translation): paper choice, progress, then where the file went. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SimuDeckParser.App.ViewModels"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="SimuDeckParser.App.Views.ExportDialog"
+             x:DataType="vm:ExportDialogViewModel">
+  <StackPanel Width="520" Spacing="8">
+    <mi:MaterialIcon Kind="Printer" Width="28" Height="28" Classes="primary" IsVisible="{Binding IsProxies}" />
+    <mi:MaterialIcon Kind="Translate" Width="28" Height="28" Classes="primary" IsVisible="{Binding !IsProxies}" />
+    <TextBlock Classes="headline" Text="{Binding Title}" HorizontalAlignment="Center" />
+    <!-- Done: where the file is. -->
+    <StackPanel Spacing="8" IsVisible="{Binding IsDone}">
+      <TextBlock Classes="muted" Text="The PDF is saved in:" />
+      <SelectableTextBlock Classes="wrap" Text="{Binding Done}" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+        <Button Classes="text" Content="Close" Command="{Binding CloseCommand}" />
+        <Button Classes="tonal" Command="{Binding ShowFolderCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="FolderOpen" /><TextBlock Text="Show folder" /></StackPanel>
+        </Button>
+        <Button Classes="filled" Command="{Binding OpenCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="OpenInNew" /><TextBlock Text="Open" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+    <!-- Asking: the paper. -->
+    <StackPanel Spacing="8" IsVisible="{Binding IsAsking}">
+      <TextBlock Classes="muted wrap" Text="{Binding About}" />
+      <Border Background="{DynamicResource ErrorContainer}" CornerRadius="12" Padding="12" IsVisible="{Binding IsEmpty}">
+        <TextBlock Text="This deck has no card to print." Foreground="{DynamicResource OnErrorContainer}" />
+      </Border>
+      <TextBlock Classes="label muted" Text="Paper" Margin="0,4,0,0" />
+      <StackPanel Orientation="Horizontal">
+        <ToggleButton Classes="chip" Content="A4" IsChecked="{Binding IsA4, Mode=OneWay}" Command="{Binding PickA4Command}" />
+        <ToggleButton Classes="chip" Content="US Letter" IsChecked="{Binding IsLetter, Mode=OneWay}" Command="{Binding PickLetterCommand}" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Running}">
+          <TextBlock Classes="muted" Text="Writing the PDF…" VerticalAlignment="Center" />
+          <Arc Classes="spinner" />
+        </StackPanel>
+        <Button Classes="text" Content="Cancel" Command="{Binding CloseCommand}" IsVisible="{Binding IsIdle}" />
+        <Button Classes="filled" Command="{Binding SaveCommand}" IsEnabled="{Binding CanSave}" IsVisible="{Binding IsIdle}">
+          <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Download" /><TextBlock Text="Save PDF" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

@@ -27,24 +27,25 @@ git clone https://github.com/Fireez30/SimuDeckParser_RUST.git
 cd SimuDeckParser_RUST
 ```
 
-Scripts at the root of the repository set up a development environment, build a release archive, and install the tool. Linux scripts are bash (Fedora, Debian/Ubuntu and Arch are supported); Windows scripts are PowerShell and use `winget`.
+The tool is written in C# (.NET 10) with the [Avalonia](https://avaloniaui.net) UI framework. Scripts at the root of the repository set up a development environment, build a release archive, and install the tool. Linux scripts are bash (any distribution, immutable ones included); Windows scripts are PowerShell and use `winget`.
 
 | Step | Linux | Windows (PowerShell) |
 | --- | --- | --- |
-| Install the tools to develop and test (Rust, linker, libraries) | `./setup.sh` | `powershell -ExecutionPolicy Bypass -File .\setup.ps1` |
+| Install the tools to develop and test (the .NET 10 SDK) | `./setup.sh` | `powershell -ExecutionPolicy Bypass -File .\setup.ps1` |
 | Build a release archive into `dist/` | `./build.sh` | `powershell -ExecutionPolicy Bypass -File .\build.ps1` |
 | Build and install | `./install.sh` | `powershell -ExecutionPolicy Bypass -File .\install.ps1` |
 | Uninstall | `./install.sh --uninstall` | `powershell -ExecutionPolicy Bypass -File .\install.ps1 -Uninstall` |
 
-- `setup.sh` also installs the Windows cross-compilation target (MinGW); skip it with `--no-cross`. Then `./build.sh windows` builds the Windows archive from Linux, and `./build.sh all` builds both.
+- `setup.sh` installs the .NET 10 SDK in `~/.dotnet` (no root needed). `./build.sh windows` builds the Windows archive from Linux, and `./build.sh all` builds both.
+- The archives hold one self-contained executable: users do not need .NET installed.
 - `install.sh` installs to `~/.local/bin` with a desktop entry for the app menu; `PREFIX=/usr/local ./install.sh` installs system-wide.
 - `install.ps1` installs to `%LOCALAPPDATA%\Programs\SimuDeckParser`, adds a Start menu shortcut and puts the folder on your user PATH.
 
-To just run it from the source tree: `cargo run --release`.
+To just run it from the source tree: `dotnet run --project SimuDeckParser.App`.
 
-New to the code (or to Rust)? Start with [documentation/ARCHITECTURE.md](documentation/ARCHITECTURE.md): a map of the code, how the window works, and a short Rust primer for this project.
+New to the code? Start with [documentation/ARCHITECTURE.md](documentation/ARCHITECTURE.md): a map of the code and how the window works.
 
-Run the tests with `cargo test`. Ignored tests cover the rest: `cargo test -- --ignored` also queries encoredecks.com and renders every screen to `target/screenshots` (or `$SCREENSHOT_DIR`); with `SIMULATOR_ROOT=/path/to/simulator` they load a real install (read-only) and report cards without artwork and unresolved deck codes.
+Run the tests with `dotnet test`. The other tests are opt-in: `SDP_LIVE_TESTS=1 dotnet test SimuDeckParser.Tests` also queries encoredecks.com and the system keyring; `SIMULATOR_ROOT=/path/to/simulator dotnet test SimuDeckParser.Tests --filter Category=RealInstall` loads a real install (read-only) and reports cards without artwork and unresolved deck codes; `SIMULATOR_ROOT=… dotnet test SimuDeckParser.App.Tests` renders every screen, in both themes, to `$SCREENSHOT_DIR` (a temporary folder by default).
 
 # Usage
 
@@ -257,11 +258,13 @@ Settings :
 
 ## Release note 
 
-beta (0.1.4) :
+beta (0.2.0) :
 
 - Added a feature to upload your own sleeve when editing or creating a deck (PNG or JPEG format)
 - Added a damage calculator screen: set up three attackers, two backrow characters and a climax from a deck, with their effects, and simulate the damage dealt against a given opponent deck
 - Added deck list sorting by date and name
+- Rewrite of the tool in C# using Avalonia
+
 0.1.3 : 
 
 - Fixed the card  panel during deck creation and edit so it doesn't disappear 

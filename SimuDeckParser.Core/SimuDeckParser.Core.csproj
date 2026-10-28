@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Everything that is not drawing the window: file formats, deck rules, network, PDFs. -->
+  <PropertyGroup>
+    <RootNamespace>SimuDeckParser</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <!-- PDFsharp pulls an older, vulnerable version. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
+    <!-- No fontconfig needed: the program embeds its fonts. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../fonts/NotoSans-Regular.ttf" LogicalName="NotoSans-Regular.ttf" />
+    <EmbeddedResource Include="../fonts/NotoSans-Medium.ttf" LogicalName="NotoSans-Medium.ttf" />
+    <InternalsVisibleTo Include="SimuDeckParser.Tests" />
+  </ItemGroup>
+</Project>

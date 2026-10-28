@@ -28,12 +28,16 @@ if ($Uninstall) {
 }
 
 Write-Host '==> Building'
-cargo build --release --locked
-if ($LASTEXITCODE -ne 0) { throw 'cargo build failed' }
+$out = Join-Path 'obj' 'publish-win'
+dotnet publish SimuDeckParser.App -c Release -r win-x64 --self-contained `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o $out
+if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
 
 Write-Host "==> Installing to $installDir"
 New-Item -ItemType Directory -Force $installDir | Out-Null
-Copy-Item -Force "target\release\$name.exe", 'README.md', 'LICENSE', 'fonts\OFL.txt' $installDir
+Copy-Item -Force (Join-Path $out 'SimuDeckParser.exe') (Join-Path $installDir "$name.exe")
+Copy-Item -Force 'README.md', 'LICENSE', 'fonts\OFL.txt' $installDir
+Remove-Item -Recurse -Force $out
 
 $exe = Join-Path $installDir "$name.exe"
 $link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
