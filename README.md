@@ -268,6 +268,7 @@ beta (0.2.0) :
 - Rewrite of the tool in C# using Avalonia
 - Optimizations 
 - Card count in deck view is now in bold
+- Added cross-distro build using AppImage on Linux
 
 0.1.3 : 
 
