@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-Builds SimuDeckParser in release mode and installs it for the current user.
+Builds WeissSchwarz Simulator Tools in release mode and installs it for the current user.
 
 .DESCRIPTION
-Copies the executable to %LOCALAPPDATA%\Programs\SimuDeckParser, adds a Start
+Copies the executable to %LOCALAPPDATA%\Programs\WeissSchwarzSimulatorTools, adds a Start
 menu shortcut and puts the folder on the user PATH. -Uninstall removes all three.
 
 Run from PowerShell:
@@ -13,9 +13,9 @@ param([switch]$Uninstall)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$name = 'simu_deck_parser'
-$installDir = Join-Path $env:LOCALAPPDATA 'Programs\SimuDeckParser'
-$shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'SimuDeckParser.lnk'
+$name = 'weiss_schwarz_simulator_tools'
+$installDir = Join-Path $env:LOCALAPPDATA 'Programs\WeissSchwarzSimulatorTools'
+$shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'WeissSchwarz Simulator Tools.lnk'
 $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 $pathEntries = @($userPath -split ';' | Where-Object { $_ })
 
@@ -23,19 +23,19 @@ if ($Uninstall) {
     Remove-Item -Recurse -Force $installDir, $shortcut -ErrorAction SilentlyContinue
     $remaining = $pathEntries | Where-Object { $_ -ne $installDir }
     [Environment]::SetEnvironmentVariable('Path', ($remaining -join ';'), 'User')
-    Write-Host 'SimuDeckParser uninstalled.'
+    Write-Host 'WeissSchwarz Simulator Tools uninstalled.'
     exit 0
 }
 
 Write-Host '==> Building'
 $out = Join-Path 'obj' 'publish-win'
-dotnet publish SimuDeckParser.App -c Release -r win-x64 --self-contained `
+dotnet publish WeissSchwarzSimulatorTools.App -c Release -r win-x64 --self-contained `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o $out
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
 
 Write-Host "==> Installing to $installDir"
 New-Item -ItemType Directory -Force $installDir | Out-Null
-Copy-Item -Force (Join-Path $out 'SimuDeckParser.exe') (Join-Path $installDir "$name.exe")
+Copy-Item -Force (Join-Path $out 'WeissSchwarzSimulatorTools.exe') (Join-Path $installDir "$name.exe")
 Copy-Item -Force 'README.md', 'LICENSE', 'fonts\OFL.txt' $installDir
 Remove-Item -Recurse -Force $out
 

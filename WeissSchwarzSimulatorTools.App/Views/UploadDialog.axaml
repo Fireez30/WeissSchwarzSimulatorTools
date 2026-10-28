@@ -1,0 +1,46 @@
+<!-- The Upload dialog: publishing a deck on Encore Decks. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="WeissSchwarzSimulatorTools.App.Views.UploadDialog"
+             x:DataType="vm:UploadDialogViewModel">
+  <StackPanel Width="520" Spacing="8">
+    <mi:MaterialIcon Kind="CloudUpload" Width="28" Height="28" Classes="primary" />
+    <TextBlock Classes="headline" Text="{Binding Title}" HorizontalAlignment="Center" />
+    <!-- Done: the link. -->
+    <StackPanel Spacing="8" IsVisible="{Binding IsDone}">
+      <TextBlock Classes="muted wrap" Text="{Binding DoneText}" />
+      <SelectableTextBlock Classes="primary" Text="{Binding Done}" TextDecorations="Underline" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+        <Button Classes="text" Content="Close" Command="{Binding CloseCommand}" />
+        <Button Classes="tonal" Command="{Binding CopyLinkCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="ContentCopy" /><TextBlock Text="Copy link" /></StackPanel>
+        </Button>
+        <Button Classes="filled" Command="{Binding OpenCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="OpenInNew" /><TextBlock Text="Open" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+    <!-- Asking. -->
+    <StackPanel Spacing="8" IsVisible="{Binding IsAsking}">
+      <TextBlock Classes="muted wrap" Text="{Binding Destination}" />
+      <TextBlock Classes="bodySmall muted wrap"
+                 Text="Codes are matched to Encore Decks cards (JP/EN, foil or not). If any card is not found there, nothing is uploaded." />
+      <Border Background="{DynamicResource ErrorContainer}" CornerRadius="12" Padding="12" IsVisible="{Binding HasSizeError}">
+        <TextBlock Text="{Binding SizeError}" Foreground="{DynamicResource OnErrorContainer}" TextWrapping="Wrap" />
+      </Border>
+      <Border Background="{DynamicResource SecondaryContainer}" CornerRadius="12" Padding="12" IsVisible="{Binding AccountPending}">
+        <TextBlock Text="Reading your Encore Decks session from the system keyring…" Foreground="{DynamicResource OnSecondaryContainer}" TextWrapping="Wrap" />
+      </Border>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Running}">
+          <TextBlock Classes="muted" Text="Uploading…" VerticalAlignment="Center" />
+          <Arc Classes="spinner" />
+        </StackPanel>
+        <Button Classes="text" Content="Cancel" Command="{Binding CloseCommand}" IsVisible="{Binding IsIdle}" />
+        <Button Classes="filled" Content="Upload" Command="{Binding UploadCommand}" IsEnabled="{Binding CanUpload}" IsVisible="{Binding IsIdle}" />
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="WeissSchwarzSimulatorTools.App.Tests/WeissSchwarzSimulatorTools.App.Tests.csproj" />
+  <Project Path="WeissSchwarzSimulatorTools.App/WeissSchwarzSimulatorTools.App.csproj" />
+  <Project Path="WeissSchwarzSimulatorTools.Core/WeissSchwarzSimulatorTools.Core.csproj" />
+  <Project Path="WeissSchwarzSimulatorTools.Tests/WeissSchwarzSimulatorTools.Tests.csproj" />
+</Solution>

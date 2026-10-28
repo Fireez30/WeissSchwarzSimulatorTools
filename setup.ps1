@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Installs what is needed to develop and test SimuDeckParser on Windows.
+Installs what is needed to develop and test WeissSchwarz Simulator Tools on Windows.
 
 .DESCRIPTION
 Installs (through winget, when missing) Git and the .NET 10 SDK, then
@@ -47,7 +47,7 @@ if ($LASTEXITCODE -ne 0) { throw 'dotnet restore failed' }
 
 Write-Host ''
 Write-Host 'Done. Next steps (open a new terminal first so PATH is up to date):'
-Write-Host '  dotnet run --project SimuDeckParser.App                  # run a debug build'
+Write-Host '  dotnet run --project WeissSchwarzSimulatorTools.App                  # run a debug build'
 Write-Host '  dotnet test                                              # run the tests'
 Write-Host '  powershell -ExecutionPolicy Bypass -File .\build.ps1     # release archive in dist\'
 Write-Host '  powershell -ExecutionPolicy Bypass -File .\install.ps1   # build and install'

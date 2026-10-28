@@ -1,0 +1,115 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+        xmlns:v="using:WeissSchwarzSimulatorTools.App.Views"
+        xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        x:Class="WeissSchwarzSimulatorTools.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="WeissSchwarzSimulatorTools"
+        Width="1600" Height="1000" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Surface}">
+  <Window.DataTemplates>
+    <!-- The dialogs, by view model. -->
+    <DataTemplate DataType="vm:ConfirmDialogViewModel">
+      <StackPanel Spacing="12" Width="420">
+        <TextBlock Classes="headline" Text="{Binding Title}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        <TextBlock Classes="muted wrap" Text="{Binding Message}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,8,0,0">
+          <Button Classes="text" Content="Cancel" Command="{Binding CancelCommand}" />
+          <Button Classes="filled" Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate DataType="vm:ImportDialogViewModel">
+      <v:ImportDialog />
+    </DataTemplate>
+    <DataTemplate DataType="vm:UploadDialogViewModel">
+      <v:UploadDialog />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ExportDialogViewModel">
+      <v:ExportDialog />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <Panel>
+    <!-- The setup screen. -->
+    <v:SetupView DataContext="{Binding}" IsVisible="{Binding IsSetup}" />
+
+    <!-- The navigation rail and the screens. -->
+    <Grid ColumnDefinitions="96,*" IsVisible="{Binding IsMain}">
+      <Border Background="{DynamicResource SurfaceContainer}" Padding="8">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Spacing="4">
+            <mi:MaterialIcon Kind="CardsOutline" Width="32" Height="32" Classes="primary" Margin="0,12,0,20" ToolTip.Tip="WeissSchwarzSimulatorTools" />
+            <ToggleButton Classes="rail" Tag="Cards" IsChecked="{Binding IsCards, Mode=OneWay}"
+                          Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Screen.Cards}">
+              <mi:MaterialIcon Kind="CardsOutline" />
+            </ToggleButton>
+            <ToggleButton Classes="rail" Tag="Decks" IsChecked="{Binding IsDecks, Mode=OneWay}"
+                          Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Screen.Decks}">
+              <mi:MaterialIcon Kind="Layers" />
+            </ToggleButton>
+            <ToggleButton Classes="rail" Tag="Encore Deck" IsChecked="{Binding IsEncore, Mode=OneWay}"
+                          Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Screen.Encore}">
+              <mi:MaterialIcon Kind="CloudDownload" />
+            </ToggleButton>
+            <ToggleButton Classes="rail" Tag="Damage" IsChecked="{Binding IsDamage, Mode=OneWay}"
+                          Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Screen.Damage}">
+              <mi:MaterialIcon Kind="Calculator" />
+            </ToggleButton>
+          </StackPanel>
+          <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Spacing="8" Margin="0,0,0,12">
+            <Button Classes="icon" HorizontalAlignment="Center" Command="{Binding ToggleThemeCommand}" ToolTip.Tip="Switch between the light and dark themes">
+              <mi:MaterialIcon Kind="ThemeLightDark" />
+            </Button>
+            <ToggleButton Classes="rail" Tag="Settings" IsChecked="{Binding IsSettings, Mode=OneWay}"
+                          Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Screen.Settings}">
+              <mi:MaterialIcon Kind="CogOutline" />
+            </ToggleButton>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+      <Panel Grid.Column="1">
+        <v:CardBrowserView DataContext="{Binding Cards}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsCards}" />
+        <v:DecksView DataContext="{Binding Decks}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsDecks}" />
+        <v:EncoreView DataContext="{Binding Encore}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsEncore}" />
+        <v:DamageView DataContext="{Binding Damage}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsDamage}" />
+        <v:SettingsView DataContext="{Binding}" IsVisible="{Binding IsSettings}" />
+      </Panel>
+    </Grid>
+
+    <!-- The snackbar. -->
+    <Border IsVisible="{Binding HasSnackbar}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,24"
+            Background="{DynamicResource InverseSurface}" CornerRadius="6" Padding="16,6,6,6" MaxWidth="720"
+            BoxShadow="0 3 12 0 #40000000">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock Text="{Binding Snackbar}" Foreground="{DynamicResource InverseOnSurface}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="620" />
+        <Button Classes="text" Content="OK" Foreground="{DynamicResource InversePrimary}" Command="{Binding CloseSnackbarCommand}" />
+      </StackPanel>
+    </Border>
+
+    <!-- A dialog, over a scrim. -->
+    <Panel IsVisible="{Binding HasDialog}">
+      <Border Background="{DynamicResource Scrim}" PointerPressed="OnScrimPressed" />
+      <Border Background="{DynamicResource SurfaceContainerHigh}" CornerRadius="28" Padding="24"
+              HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 6 24 0 #50000000" MaxHeight="{Binding $parent[Window].Bounds.Height}">
+        <ContentControl Content="{Binding Dialog}" />
+      </Border>
+    </Panel>
+
+    <!-- The error dialog, over everything. -->
+    <Panel IsVisible="{Binding HasErrorDialog}">
+      <Border Background="{DynamicResource Scrim}" PointerPressed="OnErrorScrimPressed" />
+      <Border Background="{DynamicResource SurfaceContainerHigh}" CornerRadius="28" Padding="24" Width="468"
+              HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 6 24 0 #50000000">
+        <StackPanel Spacing="12">
+          <mi:MaterialIcon Kind="AlertCircleOutline" Width="28" Height="28" Classes="error" />
+          <TextBlock Classes="headline" Text="{Binding ErrorDialog.Title, FallbackValue=''}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+          <SelectableTextBlock Classes="muted wrap" Text="{Binding ErrorDialog.Message, FallbackValue=''}" />
+          <Button Classes="text" Content="OK" HorizontalAlignment="Right" Command="{Binding CloseErrorDialogCommand}" Margin="0,8,0,0" />
+        </StackPanel>
+      </Border>
+    </Panel>
+  </Panel>
+</Window>

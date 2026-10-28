@@ -1,0 +1,142 @@
+<!-- The deck being built or edited, next to the card browser. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+             xmlns:v="using:WeissSchwarzSimulatorTools.App.Views"
+             xmlns:ctl="using:WeissSchwarzSimulatorTools.App.Controls"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="WeissSchwarzSimulatorTools.App.Views.DeckEditorPanel"
+             x:DataType="vm:DeckEditorViewModel"
+             x:Name="Root">
+  <Border Classes="card" Padding="16,12">
+    <DockPanel>
+      <!-- Header: name, sleeve, size. -->
+      <StackPanel DockPanel.Dock="Top" Spacing="6">
+        <TextBlock Classes="label muted" Text="{Binding Title}" />
+        <TextBox Name="NameField" Text="{Binding Name}" Watermark="Deck name" FontSize="18" />
+        <TextBlock Classes="bodySmall muted wrap" Text="{Binding NameHint}" IsVisible="{Binding HasNameHint}">
+          <TextBlock.Styles>
+            <Style Selector="TextBlock">
+              <Setter Property="Foreground" Value="{DynamicResource Error}" />
+            </Style>
+          </TextBlock.Styles>
+        </TextBlock>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Classes="label muted" Text="Sleeve" VerticalAlignment="Center" />
+          <v:SleevePickerView DataContext="{Binding SleevePicker}" />
+        </StackPanel>
+        <DockPanel Margin="0,8,0,0">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Classes="bodySmall muted" Text="{Binding TypeCounts}" />
+            <TextBlock Classes="bodySmall muted" Text="{Binding ClimaxCount}" IsVisible="{Binding !TooManyClimaxes}" />
+            <TextBlock Classes="bodySmall error" Text="{Binding ClimaxCount}" IsVisible="{Binding TooManyClimaxes}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <TextBlock Classes="headline" Text="{Binding Total}" />
+            <TextBlock Classes="title muted" Text="{Binding TotalText}" VerticalAlignment="Bottom" Margin="0,0,0,2" />
+          </StackPanel>
+        </DockPanel>
+        <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="6" MinHeight="6" CornerRadius="3"
+                     Background="{DynamicResource SurfaceContainerHighest}" Classes.complete="{Binding IsComplete}">
+          <ProgressBar.Styles>
+            <Style Selector="ProgressBar.complete">
+              <Setter Property="Foreground" Value="{DynamicResource Success}" />
+            </Style>
+          </ProgressBar.Styles>
+        </ProgressBar>
+        <TextBlock Classes="bodySmall error wrap" Text="{Binding Refusal}" IsVisible="{Binding HasRefusal}" />
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <ToggleButton Classes="icon" IsChecked="{Binding !IsGrid, Mode=OneWay}" Command="{Binding ShowListCommand}" ToolTip.Tip="Deck as a list">
+              <mi:MaterialIcon Kind="ViewList" />
+            </ToggleButton>
+            <ToggleButton Classes="icon" IsChecked="{Binding IsGrid, Mode=OneWay}" Command="{Binding ShowGridCommand}" ToolTip.Tip="Deck as a grid">
+              <mi:MaterialIcon Kind="ViewGrid" />
+            </ToggleButton>
+          </StackPanel>
+          <TextBlock Classes="label muted" Text="{Binding DistinctText}" VerticalAlignment="Center" />
+        </DockPanel>
+      </StackPanel>
+
+      <!-- Actions. -->
+      <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
+        <Border Background="{DynamicResource ErrorContainer}" CornerRadius="12" Padding="12" IsVisible="{Binding HasError}">
+          <TextBlock Text="{Binding Error}" Foreground="{DynamicResource OnErrorContainer}" TextWrapping="Wrap" />
+        </Border>
+        <DockPanel>
+          <Button Classes="icon small" DockPanel.Dock="Left" Command="{Binding ClearCardsCommand}" ToolTip.Tip="Remove every card">
+            <mi:MaterialIcon Kind="DeleteSweepOutline" />
+          </Button>
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="text" Content="Cancel" Command="{Binding CancelCommand}" />
+            <Button Classes="filled" Command="{Binding SaveCommand}" IsEnabled="{Binding CanSave}" ToolTip.Tip="{Binding SaveTip}">
+              <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="ContentSave" /><TextBlock Text="Save" /></StackPanel>
+            </Button>
+          </StackPanel>
+        </DockPanel>
+      </StackPanel>
+
+      <!-- The deck's cards by level, climaxes last. -->
+      <ScrollViewer Margin="0,4,0,0">
+        <Panel>
+          <StackPanel IsVisible="{Binding IsEmpty}" Spacing="8" Margin="0,24,0,0" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="Layers" Width="40" Height="40" Foreground="{DynamicResource Outline}" />
+            <TextBlock Classes="muted" Text="Click cards on the left to add them." />
+          </StackPanel>
+          <StackPanel IsVisible="{Binding !IsEmpty}">
+            <ItemsControl ItemsSource="{Binding Groups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:EditorGroupViewModel">
+                  <StackPanel Margin="0,6,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
+                      <TextBlock Classes="label muted" Text="{Binding Title}" VerticalAlignment="Center" />
+                      <Border Classes="chip" Padding="8,0"><TextBlock Classes="label muted" FontSize="12" Text="{Binding Count}" /></Border>
+                    </StackPanel>
+                    <!-- As a list. -->
+                    <ItemsControl ItemsSource="{Binding Cards}" IsVisible="{Binding !#Root.((vm:DeckEditorViewModel)DataContext).IsGrid}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:EditorCardViewModel">
+                          <DockPanel Height="52" Background="Transparent" PointerEntered="OnRowEntered">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                              <Button Classes="icon small" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove a copy"><mi:MaterialIcon Kind="MinusThick" /></Button>
+                              <TextBlock Classes="titleMedium" Text="{Binding Copies}" VerticalAlignment="Center" MinWidth="16" TextAlignment="Center" />
+                              <Button Classes="icon small" Command="{Binding AddCommand}" ToolTip.Tip="Add a copy"><mi:MaterialIcon Kind="PlusThick" /></Button>
+                            </StackPanel>
+                            <Border CornerRadius="4" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,8,0">
+                              <Image Width="34" Height="48" ctl:Pictures.DecodeWidth="60" ctl:Pictures.Path="{Binding Card.Image}" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                              <TextBlock Text="{Binding Card.Name}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Classes="bodySmall muted" Text="{Binding Stats}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                          </DockPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- As a grid: click adds a copy, right-click removes one. -->
+                    <ItemsControl ItemsSource="{Binding Cards}" IsVisible="{Binding #Root.((vm:DeckEditorViewModel)DataContext).IsGrid}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:EditorCardViewModel">
+                          <ctl:CardThumb Card="{Binding Card}" Width="80" Height="112" Margin="0,0,6,6" Radius="6" DecodeWidth="120" Copies="{Binding Copies}"
+                                         HoverCommand="{Binding #Root.((vm:DeckEditorViewModel)DataContext).HoverCommand}"
+                                         ClickCommand="{Binding #Root.((vm:DeckEditorViewModel)DataContext).AddCardCommand}"
+                                         RightClickCommand="{Binding #Root.((vm:DeckEditorViewModel)DataContext).RemoveCardCommand}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Background="{DynamicResource ErrorContainer}" CornerRadius="12" Padding="12" Margin="0,8,0,0" IsVisible="{Binding HasUnmatched}">
+              <TextBlock Text="{Binding UnmatchedText}" Foreground="{DynamicResource OnErrorContainer}" TextWrapping="Wrap" />
+            </Border>
+          </StackPanel>
+        </Panel>
+      </ScrollViewer>
+    </DockPanel>
+  </Border>
+</UserControl>

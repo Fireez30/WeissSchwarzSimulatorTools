@@ -23,8 +23,8 @@ Clone the GIT using the command line or software you prefer.
 Example : 
 
 ```sh
-git clone https://github.com/Fireez30/SimuDeckParser_RUST.git
-cd SimuDeckParser_RUST
+git clone https://github.com/Fireez30/WeissSchwarzSimulatorTools.git
+cd WeissSchwarzSimulatorTools
 ```
 
 The tool is written in C# (.NET 10) with the [Avalonia](https://avaloniaui.net) UI framework. Scripts at the root of the repository set up a development environment, build a release archive, and install the tool. Linux scripts are bash (any distribution, immutable ones included); Windows scripts are PowerShell and use `winget`.
@@ -39,13 +39,13 @@ The tool is written in C# (.NET 10) with the [Avalonia](https://avaloniaui.net) 
 - `setup.sh` installs the .NET 10 SDK in `~/.dotnet` (no root needed). `./build.sh windows` builds the Windows archive from Linux, and `./build.sh all` builds both.
 - The archives hold one self-contained executable: users do not need .NET installed.
 - `install.sh` installs to `~/.local/bin` with a desktop entry for the app menu; `PREFIX=/usr/local ./install.sh` installs system-wide.
-- `install.ps1` installs to `%LOCALAPPDATA%\Programs\SimuDeckParser`, adds a Start menu shortcut and puts the folder on your user PATH.
+- `install.ps1` installs to `%LOCALAPPDATA%\Programs\WeissSchwarzSimulatorTools`, adds a Start menu shortcut and puts the folder on your user PATH.
 
-To just run it from the source tree: `dotnet run --project SimuDeckParser.App`.
+To just run it from the source tree: `dotnet run --project WeissSchwarzSimulatorTools.App`.
 
 New to the code? Start with [documentation/ARCHITECTURE.md](documentation/ARCHITECTURE.md): a map of the code and how the window works.
 
-Run the tests with `dotnet test`. The other tests are opt-in: `SDP_LIVE_TESTS=1 dotnet test SimuDeckParser.Tests` also queries encoredecks.com and the system keyring; `SIMULATOR_ROOT=/path/to/simulator dotnet test SimuDeckParser.Tests --filter Category=RealInstall` loads a real install (read-only) and reports cards without artwork and unresolved deck codes; `SIMULATOR_ROOT=… dotnet test SimuDeckParser.App.Tests` renders every screen, in both themes, to `$SCREENSHOT_DIR` (a temporary folder by default).
+Run the tests with `dotnet test`. The other tests are opt-in: `WSST_LIVE_TESTS=1 dotnet test WeissSchwarzSimulatorTools.Tests` also queries encoredecks.com and the system keyring; `SIMULATOR_ROOT=/path/to/simulator dotnet test WeissSchwarzSimulatorTools.Tests --filter Category=RealInstall` loads a real install (read-only) and reports cards without artwork and unresolved deck codes; `SIMULATOR_ROOT=… dotnet test WeissSchwarzSimulatorTools.App.Tests` renders every screen, in both themes, to `$SCREENSHOT_DIR` (a temporary folder by default).
 
 # Usage
 

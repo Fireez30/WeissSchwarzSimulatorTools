@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs what is needed to develop and test SimuDeckParser on Linux: the .NET 10 SDK, in
+# Installs what is needed to develop and test WeissSchwarz Simulator Tools on Linux: the .NET 10 SDK, in
 # ~/.dotnet (no root needed, works on immutable distributions too), then the NuGet packages.
 #
 # Usage: ./setup.sh
@@ -32,7 +32,7 @@ echo
 echo "Done. Add ~/.dotnet to your PATH (e.g. in ~/.bashrc):"
 echo '  export PATH="$HOME/.dotnet:$PATH"'
 echo "Next steps:"
-echo "  dotnet run --project SimuDeckParser.App   # run a debug build"
+echo "  dotnet run --project WeissSchwarzSimulatorTools.App   # run a debug build"
 echo "  dotnet test                               # run the tests"
 echo "  ./build.sh                                # release archive in dist/"
 echo "  ./install.sh                              # build and install"

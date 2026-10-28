@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The window, built with Avalonia. The rest of the program is WeissSchwarzSimulatorTools.Core. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>WeissSchwarzSimulatorTools</AssemblyName>
+    <RootNamespace>WeissSchwarzSimulatorTools.App</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
+    <!-- Skia without fontconfig (see WeissSchwarzSimulatorTools.Core): the window uses the embedded fonts. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" ExcludeAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../WeissSchwarzSimulatorTools.Core/WeissSchwarzSimulatorTools.Core.csproj" />
+    <InternalsVisibleTo Include="WeissSchwarzSimulatorTools.App.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="../fonts/*.ttf" Link="Assets/Fonts/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../images/*" Link="Assets/Images/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

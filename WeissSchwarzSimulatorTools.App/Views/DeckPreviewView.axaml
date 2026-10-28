@@ -1,0 +1,137 @@
+<!-- An open deck's composition tiles and card groups (Decks and Encore screens). -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+             xmlns:ctl="using:WeissSchwarzSimulatorTools.App.Controls"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="WeissSchwarzSimulatorTools.App.Views.DeckPreviewView"
+             x:DataType="vm:DeckPreviewViewModel"
+             x:Name="Root">
+  <StackPanel Spacing="12">
+    <Border Background="{DynamicResource ErrorContainer}" CornerRadius="12" Padding="12" IsVisible="{Binding HasUnmatched}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <mi:MaterialIcon Kind="AlertOutline" Width="20" Height="20" Foreground="{DynamicResource OnErrorContainer}" />
+        <TextBlock Text="{Binding UnmatchedText}" Foreground="{DynamicResource OnErrorContainer}" TextWrapping="Wrap" MaxWidth="800" />
+      </StackPanel>
+    </Border>
+
+    <!-- Composition tiles: size check, types, triggers, level curve and colours. -->
+    <WrapPanel>
+      <Border Classes="card" Width="180" Height="112" Padding="16,12" Margin="0,0,12,12">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="label muted" Text="Cards" />
+          <TextBlock Classes="headline" Text="{Binding TotalText}" />
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="CheckCircle" Width="16" Height="16" Classes="success" IsVisible="{Binding IsLegal}" />
+            <mi:MaterialIcon Kind="AlertOutline" Width="16" Height="16" Classes="error" IsVisible="{Binding !IsLegal}" />
+            <TextBlock Classes="bodySmall success" Text="{Binding LegalText}" IsVisible="{Binding IsLegal}" />
+            <TextBlock Classes="bodySmall error" Text="{Binding LegalText}" IsVisible="{Binding !IsLegal}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Width="180" Height="112" Padding="16,12" Margin="0,0,12,12">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="label muted" Text="Types" />
+          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Classes="bodySmall muted" Text="Characters" />
+            <TextBlock Classes="label" Grid.Column="1" Text="{Binding Characters}" />
+            <TextBlock Classes="bodySmall muted" Grid.Row="1" Text="Events" />
+            <TextBlock Classes="label" Grid.Row="1" Grid.Column="1" Text="{Binding Events}" />
+            <TextBlock Classes="bodySmall muted" Grid.Row="2" Text="Climaxes" />
+            <TextBlock Classes="label" Grid.Row="2" Grid.Column="1" Text="{Binding Climaxes}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Width="180" Height="112" Padding="16,12" Margin="0,0,12,12" ToolTip.Tip="{Binding TriggerBreakdown}">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="label muted" Text="Triggers" />
+          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+            <TextBlock Classes="bodySmall muted" Text="Triggers" />
+            <TextBlock Classes="label" Grid.Column="1" Text="{Binding Triggers}" />
+            <TextBlock Classes="bodySmall muted" Grid.Row="1" Text="Non-triggers" />
+            <TextBlock Classes="label" Grid.Row="1" Grid.Column="1" Text="{Binding NonTriggers}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Width="180" Height="112" Padding="16,12" Margin="0,0,12,12">
+        <StackPanel Spacing="2">
+          <TextBlock Classes="label muted" Text="Level curve" />
+          <ItemsControl ItemsSource="{Binding LevelBars}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:LevelBar">
+                <StackPanel Width="36" Background="Transparent" ToolTip.Tip="{Binding Tip}">
+                  <Panel Height="50">
+                    <StackPanel VerticalAlignment="Bottom">
+                      <TextBlock Text="{Binding Count}" FontSize="12" FontWeight="Medium" HorizontalAlignment="Center" />
+                      <Border Width="24" Height="{Binding Height}" Background="{DynamicResource Primary}" CornerRadius="4,4,0,0" />
+                    </StackPanel>
+                  </Panel>
+                  <Border Height="1" Background="{DynamicResource OutlineVariant}" />
+                  <TextBlock Text="{Binding Label}" FontSize="11" Classes="muted" HorizontalAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Width="240" Height="112" Padding="16,12" Margin="0,0,12,12">
+        <StackPanel Spacing="6">
+          <TextBlock Classes="label muted" Text="Colors" />
+          <ItemsControl ItemsSource="{Binding Colors}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ColorShare">
+                <Border Height="12" Width="{Binding Width}" CornerRadius="4" Background="{Binding Brush}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <ItemsControl ItemsSource="{Binding Colors}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ColorShare">
+                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,10,2">
+                  <Ellipse Width="10" Height="10" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                  <TextBlock Classes="bodySmall muted" Text="{Binding Label}" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </WrapPanel>
+
+    <!-- The cards by type. -->
+    <ItemsControl ItemsSource="{Binding Groups}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:DeckGroupViewModel">
+          <StackPanel Spacing="6" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="label muted" Text="{Binding Title}" VerticalAlignment="Center" />
+              <Border Classes="chip" Padding="8,0"><TextBlock Classes="label muted" FontSize="12" Text="{Binding Count}" /></Border>
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Cards}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DeckCardViewModel">
+                  <ctl:CardThumb Card="{Binding Card}" Width="128" Height="179" Margin="0,0,10,10" DecodeWidth="200"
+                                 Selected="{Binding Selected}" Copies="{Binding Badge}"
+                                 HoverCommand="{Binding #Root.((vm:DeckPreviewViewModel)DataContext).HoverCommand}"
+                                 ClickCommand="{Binding #Root.((vm:DeckPreviewViewModel)DataContext).ClickCommand}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

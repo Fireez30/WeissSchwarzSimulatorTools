@@ -1,0 +1,126 @@
+<!--
+  The Decks screen: the decks saved in the simulator on the left, the open deck in the middle (its
+  stats and cards), the hovered card on the right. While a deck is being built, the deck editor
+  takes the whole screen.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+             xmlns:v="using:WeissSchwarzSimulatorTools.App.Views"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="WeissSchwarzSimulatorTools.App.Views.DecksView"
+             x:DataType="vm:DecksViewModel"
+             x:Name="Root">
+  <Panel>
+    <!-- The deck editor. -->
+    <v:CardBrowserView DataContext="{Binding Editor.Browser, FallbackValue={x:Null}}" IsVisible="{Binding #Root.((vm:DecksViewModel)DataContext).IsEditing}">
+      <v:CardBrowserView.SideContent>
+        <v:DeckEditorPanel DataContext="{Binding #Root.((vm:DecksViewModel)DataContext).Editor}" />
+      </v:CardBrowserView.SideContent>
+    </v:CardBrowserView>
+
+    <DockPanel IsVisible="{Binding IsBrowsing}">
+      <!-- The deck list. -->
+      <Border DockPanel.Dock="Left" Width="300" Margin="16,16,8,16" Classes="card" Padding="12">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Spacing="8">
+            <DockPanel>
+              <Button Classes="text" DockPanel.Dock="Right" Command="{Binding ToggleSortCommand}" ToolTip.Tip="{Binding SortTip}">
+                <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Sort" /><TextBlock Text="{Binding SortLabel}" /></StackPanel>
+              </Button>
+              <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0,0,0">
+                <TextBlock Classes="headline" Text="Decks" />
+                <TextBlock Classes="label muted" Text="{Binding OwnCount}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DockPanel>
+            <UniformGrid Columns="2">
+              <Button Classes="filled" Command="{Binding NewDeckCommand}" HorizontalAlignment="Stretch" Margin="0,0,4,0" Padding="8,0">
+                <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlusThick" /><TextBlock Text="New deck" /></StackPanel>
+              </Button>
+              <Button Classes="tonal" Command="{Binding ImportCommand}" HorizontalAlignment="Stretch" Margin="4,0,0,0" Padding="8,0"
+                      ToolTip.Tip="Import a deck from Encore Decks">
+                <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Download" /><TextBlock Text="Import" /></StackPanel>
+              </Button>
+            </UniformGrid>
+            <TextBox Classes="search" Watermark="Find a deck" Text="{Binding Query}" IsVisible="{Binding ShowSearch}" />
+          </StackPanel>
+          <Panel Margin="0,8,0,0">
+            <TextBlock Classes="muted wrap" Text="{Binding EmptyText}" IsVisible="{Binding NoDecks}" Margin="8,16" />
+            <ScrollViewer IsVisible="{Binding HasDecks}">
+              <StackPanel>
+                <ListBox Classes="plain rows" ItemsSource="{Binding OwnDecks}" SelectedItem="{Binding SelectedOwn}">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DeckItem">
+                      <StackPanel>
+                        <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Classes="label muted" Text="AI opponents" Margin="16,12,0,2" IsVisible="{Binding HasAiDecks}" />
+                <ListBox Classes="plain rows" ItemsSource="{Binding AiDecks}" SelectedItem="{Binding SelectedAi}">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DeckItem">
+                      <StackPanel>
+                        <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </StackPanel>
+            </ScrollViewer>
+          </Panel>
+        </DockPanel>
+      </Border>
+
+      <!-- The hovered card. -->
+      <v:DetailPaneView DockPanel.Dock="Right" Width="380" Margin="8,16,16,16"
+                        DataContext="{Binding Picked.Preview.Pane, FallbackValue={x:Null}}" IsVisible="{Binding #Root.((vm:DecksViewModel)DataContext).HasPicked}" />
+
+      <!-- The open deck. -->
+      <Panel Margin="12,16,8,0">
+        <StackPanel IsVisible="{Binding NothingPicked}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+          <mi:MaterialIcon Kind="Layers" Width="48" Height="48" Foreground="{DynamicResource Outline}" />
+          <TextBlock Classes="title" Text="Pick a deck" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" Text="Choose a deck on the left, build a new one, or import one from Encore Decks." HorizontalAlignment="Center" />
+        </StackPanel>
+        <ScrollViewer IsVisible="{Binding HasPicked}">
+          <StackPanel Spacing="8" DataContext="{Binding Picked}" x:DataType="vm:PickedDeckViewModel">
+            <TextBlock Classes="headline wrap" Text="{Binding Name}" />
+            <TextBlock Classes="muted" Text="{Binding SavedText}" IsVisible="{Binding HasDate}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="bodySmall muted" Text="Sleeve" VerticalAlignment="Center" />
+              <v:SleevePickerView DataContext="{Binding Sleeves}" IsVisible="{Binding $parent[StackPanel].((vm:PickedDeckViewModel)DataContext).IsOwn}" />
+              <TextBlock Classes="muted" Text="{Binding AiSleeve}" IsVisible="{Binding IsAi}" VerticalAlignment="Center" />
+            </StackPanel>
+            <WrapPanel Margin="0,4,0,0">
+              <WrapPanel.Styles>
+                <Style Selector="Button">
+                  <Setter Property="Margin" Value="0,0,8,8" />
+                </Style>
+              </WrapPanel.Styles>
+              <Button Classes="tonal" Command="{Binding #Root.((vm:DecksViewModel)DataContext).EditCommand}" IsVisible="{Binding IsOwn}">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="PencilOutline" /><TextBlock Text="Edit" /></StackPanel>
+              </Button>
+              <Button Classes="outlined" Command="{Binding #Root.((vm:DecksViewModel)DataContext).DuplicateCommand}" ToolTip.Tip="Build a new deck starting from this one">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="ContentCopy" /><TextBlock Text="Duplicate" /></StackPanel>
+              </Button>
+              <Button Classes="outlined" Command="{Binding #Root.((vm:DecksViewModel)DataContext).UploadCommand}" ToolTip.Tip="Publish this deck on Encore Decks">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="CloudUpload" /><TextBlock Text="Upload" /></StackPanel>
+              </Button>
+              <Button Classes="outlined" Command="{Binding #Root.((vm:DecksViewModel)DataContext).PrintProxiesCommand}" ToolTip.Tip="PDF of the deck's cards at real size, to print and cut out">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Printer" /><TextBlock Text="Proxies" /></StackPanel>
+              </Button>
+              <Button Classes="outlined" Command="{Binding #Root.((vm:DecksViewModel)DataContext).PrintTranslationCommand}" ToolTip.Tip="PDF of the cards with their English text">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Translate" /><TextBlock Text="Translation" /></StackPanel>
+              </Button>
+            </WrapPanel>
+            <v:DeckPreviewView DataContext="{Binding Preview}" />
+          </StackPanel>
+        </ScrollViewer>
+      </Panel>
+    </DockPanel>
+  </Panel>
+</UserControl>

@@ -1,4 +1,4 @@
-# How SimuDeckParser is built
+# How WeissSchwarz Simulator Tools is built
 
 A guided tour of the code. Read it top to bottom once; afterwards, the "Where is…?" table is the
 quickest way in.
@@ -14,14 +14,14 @@ shows them in a window. It can also build and edit decks, import and publish dec
 [encoredecks.com](https://www.encoredecks.com), print decks as PDFs and simulate the damage of
 a turn.
 
-The code is split in three projects (`SimuDeckParser.slnx` ties them together):
+The code is split in three projects (`WeissSchwarzSimulatorTools.slnx` ties them together):
 
 | Project                  | Contains                                                                  |
 |--------------------------|---------------------------------------------------------------------------|
-| `SimuDeckParser.Core`    | Everything that is not drawing: file formats, deck rules, network, PDFs, the damage simulator. No UI code. |
-| `SimuDeckParser.App`     | The window, built with [Avalonia](https://avaloniaui.net) (XAML views and their view models). |
-| `SimuDeckParser.Tests`   | The tests of the library (xUnit).                                         |
-| `SimuDeckParser.App.Tests` | Renders every screen to PNG files, in both themes (Avalonia headless).  |
+| `WeissSchwarzSimulatorTools.Core`    | Everything that is not drawing: file formats, deck rules, network, PDFs, the damage simulator. No UI code. |
+| `WeissSchwarzSimulatorTools.App`     | The window, built with [Avalonia](https://avaloniaui.net) (XAML views and their view models). |
+| `WeissSchwarzSimulatorTools.Tests`   | The tests of the library (xUnit).                                         |
+| `WeissSchwarzSimulatorTools.App.Tests` | Renders every screen to PNG files, in both themes (Avalonia headless).  |
 
 The app calls the library; the library never calls the app. When you change *what the program
 does* (a file format, a matching rule), it is almost always in Core; when you change *how it
@@ -32,7 +32,7 @@ Settings shared by every project (target framework, version) are in `Directory.B
 ## Where is…?
 
 ```text
-SimuDeckParser.Core/
+WeissSchwarzSimulatorTools.Core/
 ├── Model.cs                The data types: Card, CardSet, Serie, Deck, CardColor, CardType, Trigger.
 ├── Text.cs                 Decoding text files, the card text markup (<b>, <sprite…>), quoted names.
 ├── CardCodes.cs            The many spellings of a card code (KS/W49-001 vs KS/W49-E001…).
@@ -60,7 +60,7 @@ SimuDeckParser.Core/
 └── Pdf/                    Printable PDFs: Printouts.cs lays out proxies and translation sheets,
                             Document.cs (PDFsharp) and Artwork.cs (SkiaSharp) do the drawing.
 
-SimuDeckParser.App/
+WeissSchwarzSimulatorTools.App/
 ├── Program.cs              Opens the window; the embedded fonts.
 ├── App.axaml               The theme: Fluent, Material icons, our colours and components.
 ├── Theme/Colors.axaml      The Material 3 colour roles, light and dark.
@@ -179,11 +179,11 @@ screen exist, so a serie of a thousand cards scrolls smoothly.
 ## Building, running, testing
 
 ```sh
-dotnet run --project SimuDeckParser.App                   # build and open the window
+dotnet run --project WeissSchwarzSimulatorTools.App                   # build and open the window
 dotnet test                                               # every test that needs nothing more
-SDP_LIVE_TESTS=1 dotnet test SimuDeckParser.Tests --filter Category=Live   # encoredecks.com and the system keyring
-SIMULATOR_ROOT=/path/to/simulator dotnet test SimuDeckParser.Tests --filter Category=RealInstall
-SIMULATOR_ROOT=/path/to/simulator SCREENSHOT_DIR=/some/dir dotnet test SimuDeckParser.App.Tests
+WSST_LIVE_TESTS=1 dotnet test WeissSchwarzSimulatorTools.Tests --filter Category=Live   # encoredecks.com and the system keyring
+SIMULATOR_ROOT=/path/to/simulator dotnet test WeissSchwarzSimulatorTools.Tests --filter Category=RealInstall
+SIMULATOR_ROOT=/path/to/simulator SCREENSHOT_DIR=/some/dir dotnet test WeissSchwarzSimulatorTools.App.Tests
 ```
 
 The real-install, live and screenshot tests are skipped when their variable is not set. The real-install tests only read the simulator folder. The screenshot test renders every

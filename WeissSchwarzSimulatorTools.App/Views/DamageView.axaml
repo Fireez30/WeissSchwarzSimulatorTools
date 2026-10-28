@@ -1,0 +1,320 @@
+<!--
+  The Damage screen: the decks on the left; with one picked, the setup of the turn (stage, damage,
+  climax, both decks), the Run button and the results.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+             xmlns:v="using:WeissSchwarzSimulatorTools.App.Views"
+             xmlns:ctl="using:WeissSchwarzSimulatorTools.App.Controls"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="WeissSchwarzSimulatorTools.App.Views.DamageView"
+             x:DataType="vm:DamageViewModel"
+             x:Name="Root">
+  <UserControl.Styles>
+    <Style Selector="NumericUpDown">
+      <Setter Property="Minimum" Value="0" />
+      <Setter Property="Increment" Value="1" />
+      <Setter Property="FormatString" Value="0" />
+      <Setter Property="Width" Value="110" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Border.section">
+      <Setter Property="Background" Value="{DynamicResource SurfaceContainerLow}" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="Width" Value="250" />
+      <Setter Property="Margin" Value="0,0,12,12" />
+    </Style>
+  </UserControl.Styles>
+  <DockPanel>
+    <!-- The deck list. -->
+    <Border DockPanel.Dock="Left" Width="300" Margin="16,16,8,16" Classes="card" Padding="12">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="8">
+          <TextBlock Classes="headline" Text="Damage" Margin="4,0,0,0" />
+          <TextBox Classes="search" Watermark="Find a deck" Text="{Binding Query}" IsVisible="{Binding ShowSearch}" />
+        </StackPanel>
+        <Panel Margin="0,8,0,0">
+          <TextBlock Classes="muted wrap" Text="{Binding EmptyText}" IsVisible="{Binding NoDecks}" Margin="8,16" />
+          <ScrollViewer IsVisible="{Binding !NoDecks}">
+            <StackPanel>
+              <ListBox Classes="plain rows" ItemsSource="{Binding OwnDecks}" SelectedItem="{Binding SelectedOwn}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DeckItem">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <TextBlock Classes="label muted" Text="AI opponents" Margin="16,12,0,2" IsVisible="{Binding HasAiDecks}" />
+              <ListBox Classes="plain rows" ItemsSource="{Binding AiDecks}" SelectedItem="{Binding SelectedAi}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DeckItem">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+          </ScrollViewer>
+        </Panel>
+      </DockPanel>
+    </Border>
+
+    <v:DetailPaneView DockPanel.Dock="Right" Width="360" Margin="8,16,16,16" DataContext="{Binding Pane}"
+                      IsVisible="{Binding #Root.((vm:DamageViewModel)DataContext).HasPicked}" />
+
+    <Panel Margin="12,16,8,0">
+      <StackPanel IsVisible="{Binding NothingPicked}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+        <mi:MaterialIcon Kind="Calculator" Width="48" Height="48" Foreground="{DynamicResource Outline}" />
+        <TextBlock Classes="title" Text="Pick a deck" HorizontalAlignment="Center" />
+        <TextBlock Classes="muted" Text="Choose a deck on the left to set up a turn and simulate its damage." HorizontalAlignment="Center" />
+      </StackPanel>
+
+      <ScrollViewer Name="Page" IsVisible="{Binding HasPicked}">
+        <StackPanel Spacing="6" Margin="0,0,0,24">
+          <TextBlock Classes="headline wrap" Text="{Binding DeckName}" />
+          <TextBlock Classes="muted wrap" Text="Set up your stage, the damage of the turn and both decks, then run the turn many times with shuffled decks." />
+
+          <!-- Stage. -->
+          <TextBlock Classes="label muted" Text="Stage" Margin="0,12,0,0" />
+          <TextBlock Classes="bodySmall muted" Text="Set each character's soul with every bonus: the climax's, the backrow's…" />
+          <ItemsControl ItemsSource="{Binding Slots}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SlotViewModel">
+                <Border Classes="section">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="titleMedium" Text="{Binding Title}" />
+                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Choices}" SelectedItem="{Binding Choice}" MaxDropDownHeight="360" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Border CornerRadius="6" ClipToBounds="True" Background="Transparent" PointerEntered="OnSlotCardEntered">
+                        <Image Width="48" Height="67" ctl:Pictures.DecodeWidth="80" ctl:Pictures.Path="{Binding Image}" />
+                      </Border>
+                      <StackPanel Spacing="2" VerticalAlignment="Top">
+                        <TextBlock Classes="bodySmall muted" Text="Soul" />
+                        <NumericUpDown Value="{Binding Soul}" Maximum="20" ToolTip.Tip="Its soul when it attacks, with every bonus (the climax's…)" />
+                      </StackPanel>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Damage. -->
+          <TextBlock Classes="label muted" Text="Damage" Margin="0,6,0,0" />
+          <TextBlock Classes="bodySmall muted wrap"
+                     Text="In the order it happens. Conditions (&quot;if cancelled&quot;…) are about the last attack. A character attacking again keeps the soul of its earlier triggers." />
+          <ItemsControl ItemsSource="{Binding Sources}" MaxWidth="924" HorizontalAlignment="Left">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SourceViewModel">
+                <Border Background="{DynamicResource SurfaceContainerLow}" CornerRadius="8" Padding="12,6" Margin="0,0,0,6">
+                  <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                      <Button Classes="icon small" Command="{Binding MoveUpCommand}" IsEnabled="{Binding !IsFirst}" ToolTip.Tip="Move up"><mi:MaterialIcon Kind="ArrowUp" /></Button>
+                      <Button Classes="icon small" Command="{Binding MoveDownCommand}" IsEnabled="{Binding !IsLast}" ToolTip.Tip="Move down"><mi:MaterialIcon Kind="ArrowDown" /></Button>
+                      <Button Classes="icon small" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove"><mi:MaterialIcon Kind="Close" /></Button>
+                    </StackPanel>
+                    <WrapPanel>
+                      <WrapPanel.Styles>
+                        <Style Selector="WrapPanel > Control">
+                          <Setter Property="Margin" Value="0,2,8,2" />
+                          <Setter Property="VerticalAlignment" Value="Center" />
+                        </Style>
+                      </WrapPanel.Styles>
+                      <TextBlock Classes="label muted" Text="{Binding Number, StringFormat='{}{0}.'}" />
+                      <ComboBox Width="190" ItemsSource="{x:Static vm:SourceViewModel.KindChoices}" SelectedItem="{Binding Kind}" ToolTip.Tip="{Binding Description}" />
+                      <ComboBox Width="210" ItemsSource="{Binding CharacterChoices}" SelectedItem="{Binding Character}" IsVisible="{Binding IsAttack}" />
+                      <ComboBox Width="120" ItemsSource="{x:Static vm:SourceViewModel.AttackChoices}" SelectedItem="{Binding Attack}" IsVisible="{Binding IsAttack}"
+                                ToolTip.Tip="Front attack, side attack (loses soul), direct attack (+1 soul)" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <StackPanel.IsVisible>
+                          <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="IsAttack" />
+                            <Binding Path="IsSide" />
+                          </MultiBinding>
+                        </StackPanel.IsVisible>
+                        <TextBlock Classes="bodySmall muted" Text="Level in front" VerticalAlignment="Center"
+                                   ToolTip.Tip="A side attack loses as much soul as the level of the character in front" />
+                        <NumericUpDown Value="{Binding DefenderLevel}" Maximum="3" Width="90" />
+                      </StackPanel>
+                      <TextBlock Classes="bodySmall muted" Text="{Binding MusashiText}" IsVisible="{Binding IsMusashi}"
+                                 ToolTip.Tip="A card's level + 1, from your deck minus the stage and the climax" />
+                      <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasAmount}">
+                        <NumericUpDown Value="{Binding Amount}" Maximum="20" Width="90" />
+                        <TextBlock Classes="bodySmall muted" Text="{Binding Unit}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </WrapPanel>
+                  </DockPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <Button Classes="text" Command="{Binding AddAttackCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="PlusThick" /><TextBlock Text="Add attack" /></StackPanel>
+            </Button>
+            <Button Classes="text" Command="{Binding AddBurnCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="PlusThick" /><TextBlock Text="Add burn" /></StackPanel>
+            </Button>
+          </StackPanel>
+
+          <!-- Climax, your deck, the opponent. -->
+          <WrapPanel Margin="0,8,0,0">
+            <Border Classes="section">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="titleMedium" Text="Climax" />
+                <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding ClimaxChoices}" SelectedItem="{Binding Climax}" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <Border CornerRadius="6" ClipToBounds="True" Background="Transparent" PointerEntered="OnClimaxEntered">
+                    <Image Width="48" Height="67" ctl:Pictures.DecodeWidth="80" ctl:Pictures.Path="{Binding ClimaxImage}" />
+                  </Border>
+                  <TextBlock Classes="bodySmall muted wrap" Width="150"
+                             Text="Out of your deck. Add its soul bonus to the soul of the characters it gives it to." />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="titleMedium" Text="Your deck" />
+                <TextBlock Classes="bodySmall muted wrap" Text="Cards left, revealed by the trigger checks." />
+                <ItemsControl ItemsSource="{Binding DeckCounts}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CountViewModel">
+                      <DockPanel Margin="0,0,0,4">
+                        <NumericUpDown DockPanel.Dock="Right" Value="{Binding Value}" Maximum="{Binding Max}" Width="118" Margin="6,0,0,0" />
+                        <TextBlock Classes="bodySmall muted" Text="{Binding Label}" VerticalAlignment="Center" />
+                      </DockPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="label" Text="{Binding DeckTotalText}" ToolTip.Tip="At most 50 cards and 8 climaxes, minus the stage and the climax" />
+                <Button Classes="text" Command="{Binding ResetDeckCommand}" ToolTip.Tip="The whole deck, minus the cards on the stage and the climax">
+                  <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Reload" /><TextBlock Text="Reset" /></StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
+            <Border Classes="section">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="titleMedium" Text="Opponent" />
+                <ItemsControl ItemsSource="{Binding OpponentCounts}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CountViewModel">
+                      <DockPanel Margin="0,0,0,4" ToolTip.Tip="{Binding Tip}">
+                        <NumericUpDown DockPanel.Dock="Right" Value="{Binding Value}" Maximum="{Binding Max}" Width="118" Margin="6,0,0,0" />
+                        <TextBlock Classes="bodySmall muted" Text="{Binding Label}" VerticalAlignment="Center" />
+                      </DockPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="label" Text="{Binding OpponentTotalText}" ToolTip.Tip="Deck, waiting room, stock, clock and level: at most 50 cards and 8 climaxes" />
+                <TextBlock Classes="label" Text="{Binding DamageToKillText}" />
+                <Button Classes="text" Command="{Binding RefreshOpponentCommand}" ToolTip.Tip="Every card not in the stock, level or clock in the deck, with all 8 climaxes">
+                  <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Reload" /><TextBlock Text="Refreshed deck" /></StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
+          </WrapPanel>
+
+          <!-- Run. -->
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <Button Classes="filled" Command="{Binding RunCommand}" IsEnabled="{Binding CanRun}">
+              <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Play" /><TextBlock Text="Run" /></StackPanel>
+            </Button>
+            <TextBlock Classes="label muted" Text="Trials" VerticalAlignment="Center" Margin="8,0,0,0" />
+            <ToggleButton Classes="chip" Margin="0" Content="1 000" IsChecked="{Binding Is1000, Mode=OneWay}" Command="{Binding SetTrialsCommand}" CommandParameter="1000" />
+            <ToggleButton Classes="chip" Margin="0" Content="10 000" IsChecked="{Binding Is10000, Mode=OneWay}" Command="{Binding SetTrialsCommand}" CommandParameter="10000" />
+            <ToggleButton Classes="chip" Margin="0" Content="100 000" IsChecked="{Binding Is100000, Mode=OneWay}" Command="{Binding SetTrialsCommand}" CommandParameter="100000" />
+            <Arc Classes="spinner" IsVisible="{Binding Running}" Margin="8,0,0,0" />
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasProblem}" Margin="8,0,0,0">
+              <mi:MaterialIcon Kind="AlertOutline" Width="18" Height="18" Classes="error" />
+              <TextBlock Classes="error" Text="{Binding Problem}" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Results. -->
+          <StackPanel Name="Results" Spacing="6" IsVisible="{Binding HasResults}" Margin="0,16,0,0">
+            <TextBlock Classes="label muted" Text="Results" />
+            <TextBlock Classes="bodySmall muted" Text="{Binding TrialsText}" />
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsStale}">
+              <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16" Classes="muted" />
+              <TextBlock Classes="bodySmall muted" Text="The setup changed since this run: run it again to update." />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Tiles}" Margin="0,8,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ResultTile">
+                  <Border Classes="card" Width="200" Height="104" Padding="16,12" Margin="0,0,12,12">
+                    <StackPanel Spacing="4">
+                      <TextBlock Classes="label muted" Text="{Binding Label}" />
+                      <TextBlock Classes="headline" Text="{Binding Value}" />
+                      <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="label muted" Text="Damage dealt" Margin="0,8,0,0" />
+            <TextBlock Classes="bodySmall muted" Text="Chance of each total. Hover a bar for the chance of at least as much. Totals that kill are in the error colour." />
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding Bars}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:HistogramBar">
+                    <StackPanel Width="40" Background="Transparent" ToolTip.Tip="{Binding Tip}">
+                      <Panel Height="184">
+                        <StackPanel VerticalAlignment="Bottom">
+                          <TextBlock Text="{Binding Label}" FontSize="10" HorizontalAlignment="Center" Classes="muted" />
+                          <Border Height="{Binding Height}" Margin="3,0" CornerRadius="4,4,0,0" Background="{DynamicResource Primary}"
+                                  Classes.kills="{Binding Kills}">
+                            <Border.Styles>
+                              <Style Selector="Border.kills">
+                                <Setter Property="Background" Value="{DynamicResource Error}" />
+                              </Style>
+                            </Border.Styles>
+                          </Border>
+                        </StackPanel>
+                      </Panel>
+                      <Border Height="1" Background="{DynamicResource OutlineVariant}" />
+                      <TextBlock Text="{Binding Damage}" FontSize="11" HorizontalAlignment="Center" Classes="muted" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Classes="label muted" Text="By source" Margin="0,8,0,0" />
+            <Grid ColumnDefinitions="320,140,110,110">
+              <TextBlock Grid.Column="1" Classes="label muted" Text="Average damage" />
+              <TextBlock Grid.Column="2" Classes="label muted" Text="Happened" />
+              <TextBlock Grid.Column="3" Classes="label muted" Text="Cancelled" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding BySource}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SourceResult">
+                  <Grid ColumnDefinitions="320,140,110,110" Margin="0,2">
+                    <TextBlock Classes="bodySmall" Text="{Binding Name}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Damage}" />
+                    <TextBlock Grid.Column="2" Text="{Binding Happened}" />
+                    <TextBlock Grid.Column="3" Text="{Binding Cancelled}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Panel>
+  </DockPanel>
+</UserControl>
