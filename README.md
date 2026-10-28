@@ -33,11 +33,13 @@ The tool is written in C# (.NET 10) with the [Avalonia](https://avaloniaui.net) 
 | --- | --- | --- |
 | Install the tools to develop and test (the .NET 10 SDK) | `./setup.sh` | `powershell -ExecutionPolicy Bypass -File .\setup.ps1` |
 | Build a release archive into `dist/` | `./build.sh` | `powershell -ExecutionPolicy Bypass -File .\build.ps1` |
+| Build an AppImage into `dist/` | `./build-appimage.sh` | |
 | Build and install | `./install.sh` | `powershell -ExecutionPolicy Bypass -File .\install.ps1` |
 | Uninstall | `./install.sh --uninstall` | `powershell -ExecutionPolicy Bypass -File .\install.ps1 -Uninstall` |
 
 - `setup.sh` installs the .NET 10 SDK in `~/.dotnet` (no root needed). `./build.sh windows` builds the Windows archive from Linux, and `./build.sh all` builds both.
 - The archives hold one self-contained executable: users do not need .NET installed.
+- `build-appimage.sh` makes `dist/weiss_schwarz_simulator_tools-<version>-x86_64.AppImage`, a single file that runs on most distributions. It downloads [appimagetool](https://github.com/AppImage/appimagetool) on first use into `~/.cache/weiss_schwarz_simulator_tools` (or uses the one on your PATH, or `$APPIMAGETOOL`).
 - `install.sh` installs to `~/.local/bin` with a desktop entry for the app menu; `PREFIX=/usr/local ./install.sh` installs system-wide.
 - `install.ps1` installs to `%LOCALAPPDATA%\Programs\WeissSchwarzSimulatorTools`, adds a Start menu shortcut and puts the folder on your user PATH.
 
