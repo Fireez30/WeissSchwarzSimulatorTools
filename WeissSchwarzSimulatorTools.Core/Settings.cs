@@ -25,6 +25,9 @@ public sealed class Settings
     public const string DeckSort = "ui_deck_sort";
     /// <summary>The serie the card list opens at startup: the last one shown.</summary>
     public const string Serie = "ui_serie";
+    /// <summary>Every deck tag used so far, offered again in the deck editor; separated by <see cref="TagSeparator"/>.</summary>
+    public const string DeckTags = "deck_tags";
+    public const char TagSeparator = '|';
 
     public string Path { get; }
 

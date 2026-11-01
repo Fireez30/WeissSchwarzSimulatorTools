@@ -125,7 +125,7 @@ Card list, filtered by name / text / card code :
 ![Card name filtering](documentation/images/card_list_filter_name.png "Filter by name")
 ## Decks
 
-- Decks of the simulator's `Decks` folder are listed on the left (with a search field when there are many), the AI opponents' decks (`AI_*.txt`) in their own section. Click one to open it.
+- Decks of the simulator's `Decks` folder are listed on the left (with a search field when there are many, matching deck names and tags), the AI opponents' decks (`AI_*.txt`) in their own section. Click one to open it.
 
 ## Deck page : 
 - Bind sleeves to a deck (right now, sleeves are not saved between update, until the simulator is fully updated.)
@@ -167,6 +167,7 @@ The deck is created as a new public deck in your Encore Decks account when one i
 - The deck panel groups cards by level (characters and events together), with climaxes last, and switches between a list (with −/+ buttons) and a grid of pictures (click adds a copy, right-click removes one).
 - The builder follows the deck rules: at most 50 cards and 4 copies of cards sharing a name. It shows the card count and warns above 8 climaxes.
 - You can specify sleeves before saving, or let no sleeves (default behaviour).
+- Add up to 4 tags (the simulator's deck tags): type one and press Enter, or click a tag used before (tags are remembered, even after the decks using them are gone). Click a tag of the deck to remove it.
 - New sleeves can be added from the sleeve picker (here and on an open deck): under "Add a sleeve", paste the path or the link of a JPEG or PNG image, optionally name it, and press Add. The image is copied into the simulator's `Sleeves` folder (never overwriting an existing sleeve) and picked for the deck.
 - Name the deck and press Save: it is written to the simulator's `Decks` folder (a taken name gets a " (2)" suffix). A deck can be saved before it reaches 50 cards.
 - On an open deck, "Edit" changes it in place (renaming the file if you rename the deck) and "Duplicate" starts a new deck from it. AI opponents' decks can only be duplicated. Codes that match no loaded card are kept when saving.
@@ -262,6 +263,7 @@ Settings :
 
 beta (0.2.0) :
 
+- Added deck tags (up to 4 per deck, as in the simulator) when creating or editing a deck; tags used before are remembered and suggested
 - Added a feature to upload your own sleeve when editing or creating a deck (PNG or JPEG format)
 - Added a damage calculator screen: set up three attackers, two backrow characters and a climax from a deck, with their effects, and simulate the damage dealt against a given opponent deck
 - Added deck list sorting by date and name

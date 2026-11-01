@@ -300,6 +300,29 @@ public class DeckFilesTests
     }
 
     [Fact]
+    public void Tags()
+    {
+        string[] codes = ["RZ/S116-004"];
+        // As the simulator writes them: one Tag: line each, after the sleeve.
+        var deck = DeckFiles.Parse("# WeissSim Deck\nName: RZ\nDate: d\nSleeve: \nTag: nul\nTag: nul3\n\nCards:\nRZ/S116-004\n", "d/RZ.txt");
+        Assert.Equal(["nul", "nul3"], deck.Tags);
+        Assert.Equal(codes, deck.Codes);
+
+        // Blank and repeated tags are dropped, and a deck keeps at most four.
+        var text = DeckFiles.Format("RZ", "d", "", codes, [" Salvage ", "salvage", "", "Blue", "8 door", "Gate", "Extra"]);
+        Assert.Contains("Sleeve:\nTag: Salvage\nTag: Blue\nTag: 8 door\nTag: Gate\n\nCards:\n", text);
+        Assert.Equal(["Salvage", "Blue", "8 door", "Gate"], DeckFiles.Parse(text, "d/RZ.txt").Tags);
+        Assert.DoesNotContain("Tag:", DeckFiles.Format("RZ", "d", "", codes));
+
+        using var dir = new TempDir();
+        var saved = DeckFiles.SaveNew(dir.Path, "RZ", "d", "", codes, ["Blue"]);
+        Assert.Equal(["Blue"], saved.Tags);
+        Assert.Equal(saved, DeckFiles.List(dir.Path)[0]);
+        var updated = DeckFiles.Update(saved.Path, "RZ", "e", "", codes, ["Blue", "Salvage"]);
+        Assert.Equal(updated, DeckFiles.List(dir.Path)[0]);
+    }
+
+    [Fact]
     public void UpdateAndRename()
     {
         using var dir = new TempDir();

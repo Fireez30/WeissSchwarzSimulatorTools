@@ -4,13 +4,15 @@
 //     Name: Konosuba Aqua and Eris
 //     Date: 12:00  06/15/2010
 //     Sleeve: RZ Emilia 1.jpg
+//     Tag: Salvage
+//     Tag: Blue
 //
 //     Cards:
 //     KS/W49-E001
 //     KS/W49-E001
 //
 // Sleeve names an image of the simulator's Sleeves folder (see Sleeves); it is empty when the
-// deck has none.
+// deck has none. A deck has up to MaxTags Tag: lines (none when it has no tags).
 //
 // AI_*.txt files are the AI opponents' decks, copied there by the simulator.
 
@@ -29,6 +31,8 @@ public sealed record DeckFile
     public string Date { get; init; } = "";
     /// <summary>File name of the deck's sleeve image in the simulator's Sleeves folder.</summary>
     public string Sleeve { get; init; } = "";
+    /// <summary>The deck's tags, at most <see cref="DeckFiles.MaxTags"/>.</summary>
+    public IReadOnlyList<string> Tags { get; init; } = [];
     public IReadOnlyList<string> Codes { get; init; } = [];
     public string Path { get; init; } = "";
     /// <summary>Deck of an AI opponent.</summary>
@@ -42,7 +46,7 @@ public sealed record DeckFile
 
     public bool Equals(DeckFile? other) =>
         other is not null && Name == other.Name && Date == other.Date && Sleeve == other.Sleeve
-        && Codes.SequenceEqual(other.Codes) && Path == other.Path && Ai == other.Ai;
+        && Tags.SequenceEqual(other.Tags) && Codes.SequenceEqual(other.Codes) && Path == other.Path && Ai == other.Ai;
 
     public override int GetHashCode() => HashCode.Combine(Name, Date, Path);
 }
@@ -55,11 +59,15 @@ public static class DeckFiles
     /// <summary>The simulator's deck date format, HH:MM  MM/DD/YYYY.</summary>
     internal const string DateFormat = "HH:mm  MM/dd/yyyy";
 
+    /// <summary>The most tags a deck can have in the simulator.</summary>
+    public const int MaxTags = 4;
+
     /// <summary>Parses a deck file; the name falls back to the file name.</summary>
     public static DeckFile Parse(string content, string path)
     {
         var stem = System.IO.Path.GetFileNameWithoutExtension(path);
         string name = "", date = "", sleeve = "";
+        var tags = new List<string>();
         var codes = new List<string>();
         var inCards = false;
         foreach (var raw in TextHelpers.Lines(content))
@@ -70,6 +78,7 @@ public static class DeckFiles
             else if (line.StartsWith("Name:", StringComparison.Ordinal)) name = line[5..].Trim();
             else if (line.StartsWith("Date:", StringComparison.Ordinal)) date = line[5..].Trim();
             else if (line.StartsWith("Sleeve:", StringComparison.Ordinal)) sleeve = line[7..].Trim();
+            else if (line.StartsWith("Tag:", StringComparison.Ordinal)) tags.Add(line[4..].Trim());
             else if (line == "Cards:") inCards = true;
         }
         return new DeckFile
@@ -77,6 +86,7 @@ public static class DeckFiles
             Name = name.Length == 0 ? stem : name,
             Date = date,
             Sleeve = sleeve,
+            Tags = CleanTags(tags),
             Codes = codes,
             Ai = stem.StartsWith(AiPrefix, StringComparison.Ordinal),
             Path = path,
@@ -105,16 +115,27 @@ public static class DeckFiles
     }
 
     /// <summary>The content of a deck file, in the simulator's format.</summary>
-    public static string Format(string name, string date, string sleeve, IEnumerable<string> codes)
+    public static string Format(string name, string date, string sleeve, IEnumerable<string> codes, IEnumerable<string>? tags = null)
     {
         // The simulator writes Sleeve: with nothing after the colon when the deck has none.
         sleeve = sleeve.Trim();
         var sleevePart = sleeve.Length == 0 ? "" : " " + sleeve;
-        var output = new StringBuilder($"{Header}\nName: {name}\nDate: {date}\nSleeve:{sleevePart}\n\nCards:\n");
+        var output = new StringBuilder($"{Header}\nName: {name}\nDate: {date}\nSleeve:{sleevePart}\n");
+        foreach (var tag in CleanTags(tags ?? []))
+            output.Append("Tag: ").Append(tag).Append('\n');
+        output.Append("\nCards:\n");
         foreach (var code in codes)
             output.Append(code).Append('\n');
         return output.ToString();
     }
+
+    /// <summary>A tag as it can be saved: one line, trimmed; empty when nothing is left.</summary>
+    public static string CleanTag(string tag) =>
+        new string(tag.Select(c => char.IsControl(c) ? ' ' : c).ToArray()).Trim();
+
+    /// <summary>The non-empty tags, without duplicates (ignoring case), at most <see cref="MaxTags"/>.</summary>
+    public static List<string> CleanTags(IEnumerable<string> tags) =>
+        tags.Select(CleanTag).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxTags).ToList();
 
     /// <summary><paramref name="name"/> without the characters that are not allowed in file names on any system.</summary>
     public static string FileStemFor(string name)
@@ -132,7 +153,8 @@ public static class DeckFiles
     /// Writes a new deck file, never overwriting one: a taken name gets a " (2)", " (3)"… suffix,
     /// which is also used as the deck name. Returns the saved deck.
     /// </summary>
-    public static DeckFile SaveNew(string dir, string name, string date, string sleeve, IReadOnlyList<string> codes)
+    public static DeckFile SaveNew(string dir, string name, string date, string sleeve, IReadOnlyList<string> codes,
+        IReadOnlyList<string>? tags = null)
     {
         Errors.WithContext($"creating {dir}", () => Directory.CreateDirectory(dir));
         var stem = FileStemFor(name);
@@ -158,15 +180,16 @@ public static class DeckFiles
             suffix++;
         }
         if (finalName.Length == 0) finalName = stem;
-        Errors.WithContext($"writing {path}", () => File.WriteAllText(path, Format(finalName, date, sleeve, codes)));
-        return new DeckFile { Name = finalName, Date = date, Sleeve = sleeve, Codes = codes.ToList(), Path = path };
+        Errors.WithContext($"writing {path}", () => File.WriteAllText(path, Format(finalName, date, sleeve, codes, tags)));
+        return new DeckFile { Name = finalName, Date = date, Sleeve = sleeve, Tags = CleanTags(tags ?? []), Codes = codes.ToList(), Path = path };
     }
 
     /// <summary>
     /// Rewrites an existing deck file. When the name changed, the file is renamed to match it if
     /// that file name is free. Fails when another deck already uses the new name.
     /// </summary>
-    public static DeckFile Update(string path, string name, string date, string sleeve, IReadOnlyList<string> codes)
+    public static DeckFile Update(string path, string name, string date, string sleeve, IReadOnlyList<string> codes,
+        IReadOnlyList<string>? tags = null)
     {
         name = name.Trim();
         var dir = System.IO.Path.GetDirectoryName(path) is { Length: > 0 } d ? d : ".";
@@ -179,8 +202,8 @@ public static class DeckFiles
             Errors.WithContext($"renaming {path}", () => File.Move(path, renamed));
             target = renamed;
         }
-        Errors.WithContext($"writing {target}", () => File.WriteAllText(target, Format(name, date, sleeve, codes)));
-        return new DeckFile { Name = name, Date = date, Sleeve = sleeve, Codes = codes.ToList(), Path = target };
+        Errors.WithContext($"writing {target}", () => File.WriteAllText(target, Format(name, date, sleeve, codes, tags)));
+        return new DeckFile { Name = name, Date = date, Sleeve = sleeve, Tags = CleanTags(tags ?? []), Codes = codes.ToList(), Path = target };
     }
 
     /// <summary>Current time in the simulator's deck date format, HH:MM  MM/DD/YYYY.</summary>

@@ -54,6 +54,7 @@
                       <StackPanel>
                         <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                         <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                        <TextBlock Classes="bodySmall muted" Text="{Binding TagsText}" IsVisible="{Binding HasTags}" TextTrimming="CharacterEllipsis" />
                       </StackPanel>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
@@ -94,6 +95,19 @@
               <TextBlock Classes="bodySmall muted" Text="Sleeve" VerticalAlignment="Center" />
               <v:SleevePickerView DataContext="{Binding Sleeves}" IsVisible="{Binding $parent[StackPanel].((vm:PickedDeckViewModel)DataContext).IsOwn}" />
               <TextBlock Classes="muted" Text="{Binding AiSleeve}" IsVisible="{Binding IsAi}" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasTags}">
+              <TextBlock Classes="bodySmall muted" Text="Tags" VerticalAlignment="Center" />
+              <ItemsControl ItemsSource="{Binding Tags}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <Border Classes="chip" Margin="0,0,6,0"><TextBlock Classes="label" Text="{Binding}" /></Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </StackPanel>
             <WrapPanel Margin="0,4,0,0">
               <WrapPanel.Styles>

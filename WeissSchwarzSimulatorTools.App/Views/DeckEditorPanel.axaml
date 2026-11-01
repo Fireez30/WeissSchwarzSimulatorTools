@@ -10,7 +10,7 @@
              x:Name="Root">
   <Border Classes="card" Padding="16,12">
     <DockPanel>
-      <!-- Header: name, sleeve, size. -->
+      <!-- Header: name, sleeve, tags, size. -->
       <StackPanel DockPanel.Dock="Top" Spacing="6">
         <TextBlock Classes="label muted" Text="{Binding Title}" />
         <TextBox Name="NameField" Text="{Binding Name}" Watermark="Deck name" FontSize="18" />
@@ -25,6 +25,49 @@
           <TextBlock Classes="label muted" Text="Sleeve" VerticalAlignment="Center" />
           <v:SleevePickerView DataContext="{Binding SleevePicker}" />
         </StackPanel>
+        <!-- Tags: the deck's (click one to remove it), a field to type a new one, and the tags used before. -->
+        <DockPanel>
+          <TextBlock Classes="label muted" DockPanel.Dock="Left" Text="Tags" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <TextBlock Classes="label muted" DockPanel.Dock="Right" Text="{Binding TagCountText}" VerticalAlignment="Center" Margin="8,0,0,0" />
+          <TextBox Text="{Binding TagInput}" Watermark="Add a tag (Enter)" IsVisible="{Binding CanAddTag}">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding AddTagCommand}" />
+            </TextBox.KeyBindings>
+          </TextBox>
+          <TextBlock Classes="bodySmall muted" Text="A deck has at most 4 tags." VerticalAlignment="Center" IsVisible="{Binding !CanAddTag}" />
+        </DockPanel>
+        <ItemsControl ItemsSource="{Binding Tags}" IsVisible="{Binding HasTags}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <ToggleButton Classes="chip" IsChecked="True" Margin="0,0,6,6" ToolTip.Tip="Remove this tag"
+                            Command="{Binding #Root.((vm:DeckEditorViewModel)DataContext).RemoveTagCommand}" CommandParameter="{Binding}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding}" />
+                  <mi:MaterialIcon Kind="Close" Width="14" Height="14" />
+                </StackPanel>
+              </ToggleButton>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl ItemsSource="{Binding TagSuggestions}" IsVisible="{Binding HasTagSuggestions}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <ToggleButton Classes="chip" IsChecked="False" Margin="0,0,6,6" ToolTip.Tip="Add this tag"
+                            Command="{Binding #Root.((vm:DeckEditorViewModel)DataContext).AddTagCommand}" CommandParameter="{Binding}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Plus" Width="14" Height="14" />
+                  <TextBlock Text="{Binding}" />
+                </StackPanel>
+              </ToggleButton>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         <DockPanel Margin="0,8,0,0">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
             <TextBlock Classes="bodySmall muted" Text="{Binding TypeCounts}" />

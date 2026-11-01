@@ -3,8 +3,10 @@
 // The editor is the browser's picker (IPicker), so clicking a card in the browser adds it here.
 // Saving is done by the Decks screen, which owns the deck files.
 
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WeissSchwarzSimulatorTools.Simulator;
 
 namespace WeissSchwarzSimulatorTools.App.ViewModels;
 
@@ -30,6 +32,8 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
     private readonly DeckList _list;
     /// <summary>Names of the other decks, to warn about duplicates.</summary>
     private readonly IReadOnlyList<string> _takenNames;
+    /// <summary>Tags used before, offered as suggestions.</summary>
+    private readonly IReadOnlyList<string> _knownTags;
     private readonly Action<DeckEditorViewModel> _save;
     private readonly Action<DeckEditorViewModel> _cancel;
 
@@ -38,13 +42,16 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
     public CardBrowserViewModel Browser { get; }
     public SleevePickerViewModel SleevePicker { get; }
 
-    public DeckEditorViewModel(string name, string? target, string sleeve, Func<string> sleevesDir, DeckList list,
-        IReadOnlyList<string> takenNames, IReadOnlyList<Serie> series, Action<DeckEditorViewModel> save, Action<DeckEditorViewModel> cancel)
+    public DeckEditorViewModel(string name, string? target, string sleeve, IReadOnlyList<string> tags, IReadOnlyList<string> knownTags,
+        Func<string> sleevesDir, DeckList list, IReadOnlyList<string> takenNames, IReadOnlyList<Serie> series,
+        Action<DeckEditorViewModel> save, Action<DeckEditorViewModel> cancel)
     {
         _name = name;
         Target = target;
         _list = list;
         _takenNames = takenNames;
+        _knownTags = knownTags;
+        Tags = [.. DeckFiles.CleanTags(tags)];
         _save = save;
         _cancel = cancel;
         SleevePicker = new SleevePickerViewModel(sleevesDir, picked =>
@@ -89,6 +96,23 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
 
     [ObservableProperty]
     private bool _isGrid;
+
+    /// <summary>The deck's tags, at most <see cref="DeckFiles.MaxTags"/>.</summary>
+    public ObservableCollection<string> Tags { get; }
+
+    /// <summary>The tag field: Enter adds what it holds, and it filters the suggestions.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TagSuggestions), nameof(HasTagSuggestions))]
+    private string _tagInput = "";
+
+    public bool HasTags => Tags.Count > 0;
+    public bool CanAddTag => Tags.Count < DeckFiles.MaxTags;
+    public string TagCountText => $"{Tags.Count}/{DeckFiles.MaxTags}";
+    public IReadOnlyList<string> TagSuggestions => !CanAddTag ? [] : _knownTags
+        .Where(t => !Tags.Contains(t, StringComparer.OrdinalIgnoreCase) && t.Contains(TagInput.Trim(), StringComparison.OrdinalIgnoreCase))
+        .Take(12)
+        .ToList();
+    public bool HasTagSuggestions => TagSuggestions.Count > 0;
 
     public bool HasRefusal => Refusal is not null;
     public bool HasError => Error is not null;
@@ -174,6 +198,31 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
         _list.Clear();
         Dirty = true;
         Refresh();
+    }
+
+    /// <summary>Adds <paramref name="tag"/>, or the tag field's text when it is null.</summary>
+    [RelayCommand]
+    private void AddTag(string? tag)
+    {
+        var cleaned = DeckFiles.CleanTag(tag ?? TagInput);
+        if (cleaned.Length == 0 || !CanAddTag) return;
+        TagInput = "";
+        if (Tags.Contains(cleaned, StringComparer.OrdinalIgnoreCase)) return;
+        Tags.Add(cleaned);
+        TagsChanged();
+    }
+
+    [RelayCommand]
+    private void RemoveTag(string tag)
+    {
+        if (Tags.Remove(tag)) TagsChanged();
+    }
+
+    private void TagsChanged()
+    {
+        Dirty = true;
+        foreach (var name in new[] { nameof(HasTags), nameof(CanAddTag), nameof(TagCountText), nameof(TagSuggestions), nameof(HasTagSuggestions) })
+            OnPropertyChanged(name);
     }
 
     [RelayCommand]

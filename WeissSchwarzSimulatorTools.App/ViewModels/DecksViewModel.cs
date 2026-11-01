@@ -28,6 +28,9 @@ public sealed record DeckItem(DeckFile File)
     public string Supporting => File.Ai || File.Date.Trim().Length == 0
         ? $"{File.Codes.Count} cards"
         : $"{File.Codes.Count} cards · {File.Date.Trim()}";
+
+    public bool HasTags => File.Tags.Count > 0;
+    public string TagsText => string.Join(" · ", File.Tags);
 }
 
 /// <summary>The deck open in the middle of the screen: its file, and its cards matched to the loaded simulator.</summary>
@@ -42,6 +45,8 @@ public sealed partial class PickedDeckViewModel(DeckFile file, Deck deck, Sleeve
     public bool IsOwn => !File.Ai;
     public bool HasDate => Deck.Date.Trim().Length > 0;
     public string SavedText => $"Saved {Deck.Date.Trim()}";
+    public IReadOnlyList<string> Tags => File.Tags;
+    public bool HasTags => File.Tags.Count > 0;
     public string AiSleeve => File.Sleeve.Trim().Length == 0 ? "None" : Sleeve.DisplayName(File.Sleeve.Trim());
 }
 
@@ -158,7 +163,9 @@ public sealed partial class DecksViewModel : ObservableObject
         _selecting = true;
         OwnDecks.Clear();
         AiDecks.Clear();
-        foreach (var deck in sorted.Where(d => query.Length == 0 || d.Name.Contains(query, StringComparison.OrdinalIgnoreCase)))
+        bool Matches(DeckFile d) => query.Length == 0 || d.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || d.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase));
+        foreach (var deck in sorted.Where(Matches))
             (deck.Ai ? AiDecks : OwnDecks).Add(new DeckItem(deck));
         SelectedOwn = OwnDecks.FirstOrDefault(d => d.File.Path == Picked?.File.Path);
         SelectedAi = AiDecks.FirstOrDefault(d => d.File.Path == Picked?.File.Path);
@@ -193,13 +200,13 @@ public sealed partial class DecksViewModel : ObservableObject
         Pick(path);
     }
 
-    /// <summary>Writes the open deck's file with a new sleeve, keeping its name, date and cards.</summary>
+    /// <summary>Writes the open deck's file with a new sleeve, keeping its name, date, tags and cards.</summary>
     private void ApplySleeve(string sleeve)
     {
         if (Picked is not { File: var file }) return;
         try
         {
-            var saved = DeckFiles.Update(file.Path, file.Name, file.Date, sleeve, file.Codes);
+            var saved = DeckFiles.Update(file.Path, file.Name, file.Date, sleeve, file.Codes, file.Tags);
             ReloadAndPick(saved.Path);
             var what = sleeve.Length == 0 ? "now has no sleeve" : $"uses the sleeve {sleeve}";
             _main.Notify(new Notice.Info($"\"{saved.Name}\" {what}."));
@@ -213,26 +220,50 @@ public sealed partial class DecksViewModel : ObservableObject
     // The deck editor.
 
     [RelayCommand]
-    private void NewDeck() => OpenEditor("", null, new DeckList(), "");
+    private void NewDeck() => OpenEditor("", null, new DeckList(), "", []);
 
     [RelayCommand]
     private void Edit()
     {
-        if (Picked is { } p) OpenEditor(p.Deck.Name, p.File.Path, new DeckList(p.Deck.Cards, [.. p.Deck.Unmatched]), p.File.Sleeve);
+        if (Picked is { } p) OpenEditor(p.Deck.Name, p.File.Path, new DeckList(p.Deck.Cards, [.. p.Deck.Unmatched]), p.File.Sleeve, p.File.Tags);
     }
 
     /// <summary>Starts a new deck from a copy of the open deck.</summary>
     [RelayCommand]
     private void Duplicate()
     {
-        if (Picked is { } p) OpenEditor($"{p.Deck.Name} (copy)", null, new DeckList(p.Deck.Cards, [.. p.Deck.Unmatched]), p.File.Sleeve);
+        if (Picked is { } p) OpenEditor($"{p.Deck.Name} (copy)", null, new DeckList(p.Deck.Cards, [.. p.Deck.Unmatched]), p.File.Sleeve, p.File.Tags);
     }
 
-    private void OpenEditor(string name, string? target, DeckList list, string sleeve)
+    private void OpenEditor(string name, string? target, DeckList list, string sleeve, IReadOnlyList<string> tags)
     {
         // Names of the other decks, so the editor can warn about duplicates.
         var taken = _decks.Where(d => d.Path != target).Select(d => d.Name).ToList();
-        Editor = new DeckEditorViewModel(name, target, sleeve, () => _main.SleevesPath, list, taken, _series, SaveEditor, CancelEditor);
+        Editor = new DeckEditorViewModel(name, target, sleeve, tags, KnownTags(), () => _main.SleevesPath, list, taken, _series,
+            SaveEditor, CancelEditor);
+    }
+
+    /// <summary>Tags remembered in the settings, then those of the deck files, without duplicates (ignoring case).</summary>
+    private List<string> KnownTags()
+    {
+        var remembered = (_main.Settings.Get(Settings.DeckTags) ?? "").Split(Settings.TagSeparator);
+        return remembered.Concat(_decks.Where(d => !d.Ai).SelectMany(d => d.Tags))
+            .Select(DeckFiles.CleanTag)
+            .Where(t => t.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>Remembers <paramref name="tags"/> in the settings, so the editor offers them again.</summary>
+    private void RememberTags(IEnumerable<string> tags)
+    {
+        // Tags holding the separator are not remembered; they are still found in their deck files.
+        var all = KnownTags().Concat(tags)
+            .Where(t => !t.Contains(Settings.TagSeparator))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase);
+        _main.SaveSetting(Settings.DeckTags, string.Join(Settings.TagSeparator, all));
     }
 
     /// <summary>Writes the edited deck: a new file, or the file being edited.</summary>
@@ -241,11 +272,13 @@ public sealed partial class DecksViewModel : ObservableObject
         var codes = editor.Codes;
         var date = DeckFiles.NowDate();
         var sleeve = editor.Sleeve.Trim();
+        var tags = editor.Tags.ToList();
         try
         {
             var saved = editor.Target is { } path
-                ? DeckFiles.Update(path, editor.Name, date, sleeve, codes)
-                : DeckFiles.SaveNew(_main.DecksPath, editor.Name.Trim(), date, sleeve, codes);
+                ? DeckFiles.Update(path, editor.Name, date, sleeve, codes, tags)
+                : DeckFiles.SaveNew(_main.DecksPath, editor.Name.Trim(), date, sleeve, codes, tags);
+            RememberTags(tags);
             Editor = null;
             ReloadAndPick(saved.Path);
             _main.Notify(new Notice.Info($"Saved \"{saved.Name}\" ({codes.Count} cards) to the simulator decks."));
