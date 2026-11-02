@@ -272,7 +272,7 @@ Settings :
 
 ## Release note 
 
-beta (0.2.0) :
+Last (0.2.0) :
 
 - Added deck tags (up to 4 per deck, as in the simulator) when creating or editing a deck; tags used before are remembered and suggested
 - Adapted decks to new simulator setup using tree-like structure, used for deck saving, deck import, deck management
