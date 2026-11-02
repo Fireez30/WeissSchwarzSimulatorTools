@@ -37,8 +37,15 @@ public static class Http
             throw new UserException($"the server answered {(int)response.StatusCode} {response.ReasonPhrase}");
     }
 
-    /// <summary>Reads the body of a response as JSON.</summary>
-    public static async Task<JsonNode> ReadJsonAsync(HttpResponseMessage response)
+    /// <summary>Reads the body of a response as JSON; a literal <c>null</c> body is refused.</summary>
+    public static async Task<JsonNode> ReadJsonAsync(HttpResponseMessage response) =>
+        await ReadNullableJsonAsync(response) ?? throw new UserException("encoredecks returned invalid JSON");
+
+    /// <summary>
+    /// Reads the body of a response as JSON, returning null when the body is the JSON literal
+    /// <c>null</c> (what the card API answers for an unknown code).
+    /// </summary>
+    public static async Task<JsonNode?> ReadNullableJsonAsync(HttpResponseMessage response)
     {
         string body;
         try
@@ -51,7 +58,7 @@ public static class Http
         }
         try
         {
-            return JsonNode.Parse(body) ?? throw new UserException("encoredecks returned invalid JSON");
+            return JsonNode.Parse(body);
         }
         catch (System.Text.Json.JsonException e)
         {

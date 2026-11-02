@@ -37,19 +37,50 @@
         </StackPanel>
         <Panel Margin="0,8,0,0">
           <TextBlock Classes="muted wrap" Text="{Binding EmptyText}" IsVisible="{Binding NoDecks}" Margin="8,16" />
+          <TextBlock Classes="muted wrap" Text="No deck matches." IsVisible="{Binding NoMatch}" Margin="8,16" />
           <ScrollViewer IsVisible="{Binding !NoDecks}">
-            <StackPanel>
-              <ListBox Classes="plain rows" ItemsSource="{Binding OwnDecks}" SelectedItem="{Binding SelectedOwn}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="vm:DeckItem">
-                    <StackPanel>
-                      <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
-                      <TextBlock Classes="bodySmall muted" Text="{Binding FolderText}" IsVisible="{Binding HasFolder}" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
+            <StackPanel Margin="0,0,10,0">
+              <!-- The decks as the tree of their folders, as on the Decks screen: a click on a folder opens or closes it, on a deck picks it. -->
+              <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.DataTemplates>
+                  <DataTemplate DataType="vm:FolderRow">
+                    <Button Classes="row" Command="{Binding Toggle}" Padding="8,6,4,6">
+                      <DockPanel>
+                        <Border DockPanel.Dock="Left" Width="{Binding IndentWidth}" />
+                        <Panel DockPanel.Dock="Left" Width="20" Margin="0,0,2,0">
+                          <mi:MaterialIcon Kind="ChevronRight" Width="18" Height="18" Classes="muted" IsVisible="{Binding Collapsed}" />
+                          <mi:MaterialIcon Kind="ChevronDown" Width="18" Height="18" Classes="muted" IsVisible="{Binding Expanded}" />
+                        </Panel>
+                        <Panel DockPanel.Dock="Left" Margin="0,0,8,0">
+                          <mi:MaterialIcon Kind="FolderOutline" Width="20" Height="20" Classes="primary" IsVisible="{Binding Collapsed}" />
+                          <mi:MaterialIcon Kind="FolderOpenOutline" Width="20" Height="20" Classes="primary" IsVisible="{Binding Expanded}" />
+                        </Panel>
+                        <TextBlock Classes="label muted" DockPanel.Dock="Right" Text="{Binding CountText}" VerticalAlignment="Center" Margin="8,0,4,0" />
+                        <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      </DockPanel>
+                    </Button>
                   </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
+                  <DataTemplate DataType="vm:DeckRow">
+                    <Button Classes="row" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+                      <DockPanel>
+                        <Border DockPanel.Dock="Left" Width="{Binding IndentWidth}" />
+                        <StackPanel>
+                          <TextBlock Text="{Binding Item.Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="bodySmall muted" Text="{Binding Item.Supporting}" />
+                          <TextBlock Classes="bodySmall muted" Text="{Binding Item.FolderText}" IsVisible="{Binding Item.HasFolder}" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="bodySmall muted" Text="{Binding Item.TagsText}" IsVisible="{Binding Item.HasTags}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </DockPanel>
+                    </Button>
+                  </DataTemplate>
+                  <DataTemplate DataType="vm:EmptyFolderRow">
+                    <DockPanel Margin="8,4,8,8">
+                      <Border DockPanel.Dock="Left" Width="{Binding IndentWidth}" />
+                      <TextBlock Classes="bodySmall muted" Text="Empty folder" Margin="22,0,0,0" />
+                    </DockPanel>
+                  </DataTemplate>
+                </ItemsControl.DataTemplates>
+              </ItemsControl>
               <TextBlock Classes="label muted" Text="AI opponents" Margin="16,12,0,2" IsVisible="{Binding HasAiDecks}" />
               <ListBox Classes="plain rows" ItemsSource="{Binding AiDecks}" SelectedItem="{Binding SelectedAi}">
                 <ListBox.ItemTemplate>
@@ -84,7 +115,7 @@
 
           <!-- Stage. -->
           <TextBlock Classes="label muted" Text="Stage" Margin="0,12,0,0" />
-          <TextBlock Classes="bodySmall muted" Text="Set each character's soul with every bonus: the climax's, the backrow's…" />
+          <TextBlock Classes="bodySmall muted" Text="Set each character's soul with its bonuses (the backrow's…). The climax's is added for you." />
           <ItemsControl ItemsSource="{Binding Slots}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
@@ -101,7 +132,16 @@
                       </Border>
                       <StackPanel Spacing="2" VerticalAlignment="Top">
                         <TextBlock Classes="bodySmall muted" Text="Soul" />
-                        <NumericUpDown Value="{Binding Soul}" Maximum="20" ToolTip.Tip="Its soul when it attacks, with every bonus (the climax's…)" />
+                        <NumericUpDown Value="{Binding Soul}" Maximum="20" HorizontalAlignment="Left" ToolTip.Tip="Its soul with its bonuses (the backrow's…), without the climax's: that one is added for you" />
+                        <TextBlock Classes="bodySmall" Text="{Binding ClimaxSoulText}" IsVisible="{Binding HasClimaxSoul}" />
+                        <ItemsControl ItemsSource="{Binding Picks}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ClimaxPickViewModel">
+                              <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked}" IsEnabled="{Binding IsEnabled}"
+                                        ToolTip.Tip="The climax gives this bonus to characters you choose" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                       </StackPanel>
                     </StackPanel>
                   </StackPanel>
@@ -110,10 +150,42 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
+          <!-- Effect options: the effects of the turn that let the player choose what they do. -->
+          <StackPanel Spacing="6" IsVisible="{Binding HasChoices}" MaxWidth="924" HorizontalAlignment="Left">
+            <TextBlock Classes="label muted" Text="Effect options" Margin="0,6,0,0" />
+            <TextBlock Classes="bodySmall muted wrap"
+                       Text="These effects let you choose what they do, for each character that attacks with them. The option dealing the most damage is picked; pick another and the damage below follows." />
+            <ItemsControl ItemsSource="{Binding Choices}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ChoiceViewModel">
+                  <Border Background="{DynamicResource SurfaceContainerLow}" CornerRadius="16" Padding="12" Margin="0,0,0,8" ToolTip.Tip="{Binding Tip}">
+                    <DockPanel>
+                      <Border DockPanel.Dock="Left" Classes="chip" Background="{DynamicResource SecondaryContainer}" CornerRadius="8" Padding="10,4"
+                              Margin="0,0,12,0" VerticalAlignment="Center" IsVisible="{Binding HasCharacter}">
+                        <TextBlock Classes="label" Text="{Binding CharacterText}" Foreground="{DynamicResource OnSecondaryContainer}" />
+                      </Border>
+                      <StackPanel Spacing="4">
+                        <TextBlock Classes="bodySmall" Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Options}" SelectedItem="{Binding Selected}" />
+                      </StackPanel>
+                    </DockPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
           <!-- Damage. -->
           <TextBlock Classes="label muted" Text="Damage" Margin="0,6,0,0" />
           <TextBlock Classes="bodySmall muted wrap"
                      Text="In the order it happens. Conditions (&quot;if cancelled&quot;…) are about the last attack. A character attacking again keeps the soul of its earlier triggers." />
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <CheckBox IsChecked="{Binding ReadEffects}" Content="Read the effects of the stage and the climax"
+                      ToolTip.Tip="When a character or the climax changes, the list is rebuilt: the attacks, with the burns, clock kicks, Musashi… of the cards around them. Costs are assumed paid, battles won, and the conditions met (they are shown under each effect)" />
+            <Button Classes="text" Command="{Binding ReadCardsCommand}" ToolTip.Tip="Rebuild the list from the cards now (your changes to it are lost, the attacks are kept)">
+              <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Refresh" /><TextBlock Text="Read the cards" /></StackPanel>
+            </Button>
+          </StackPanel>
           <ItemsControl ItemsSource="{Binding Sources}" MaxWidth="924" HorizontalAlignment="Left">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:SourceViewModel">
@@ -124,6 +196,7 @@
                       <Button Classes="icon small" Command="{Binding MoveDownCommand}" IsEnabled="{Binding !IsLast}" ToolTip.Tip="Move down"><mi:MaterialIcon Kind="ArrowDown" /></Button>
                       <Button Classes="icon small" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove"><mi:MaterialIcon Kind="Close" /></Button>
                     </StackPanel>
+                    <StackPanel>
                     <WrapPanel>
                       <WrapPanel.Styles>
                         <Style Selector="WrapPanel > Control">
@@ -150,10 +223,17 @@
                       <TextBlock Classes="bodySmall muted" Text="{Binding MusashiText}" IsVisible="{Binding IsMusashi}"
                                  ToolTip.Tip="A card's level + 1, from your deck minus the stage and the climax" />
                       <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasAmount}">
-                        <NumericUpDown Value="{Binding Amount}" Maximum="20" Width="90" />
+                        <NumericUpDown Value="{Binding Amount}" Maximum="20" Width="110" />
                         <TextBlock Classes="bodySmall muted" Text="{Binding Unit}" VerticalAlignment="Center" />
                       </StackPanel>
+                      <ComboBox Width="230" ItemsSource="{x:Static vm:SourceViewModel.ClimaxToChoices}" SelectedItem="{Binding ClimaxTo}" IsVisible="{Binding IsLook}"
+                                ToolTip.Tip="Where the climaxes looked at go; the other cards go back on top" />
+                      <CheckBox Content="Then shuffle" IsChecked="{Binding Shuffle}" IsVisible="{Binding CanShuffle}"
+                                ToolTip.Tip="The opponent's deck is shuffled after: the cards put on top are no longer known" />
                     </WrapPanel>
+                    <TextBlock Classes="bodySmall muted wrap" Text="{Binding OriginText}" IsVisible="{Binding HasOrigin}" Margin="0,0,0,2"
+                               ToolTip.Tip="Read from this card's effect. What could not be checked from the turn is assumed (listed after the card)" />
+                    </StackPanel>
                   </DockPanel>
                 </Border>
               </DataTemplate>
@@ -168,6 +248,27 @@
             </Button>
           </StackPanel>
 
+          <!-- The damage effects of the whole deck, to add by hand. -->
+          <StackPanel Spacing="4" IsVisible="{Binding HasDeckEffects}" MaxWidth="924" HorizontalAlignment="Left">
+            <TextBlock Classes="label muted" Text="{Binding DeckEffectsTitle}" Margin="0,6,0,0" />
+            <TextBlock Classes="bodySmall muted wrap"
+                       Text="Events, acts and the cards that are not on the stage. Main phase effects are added before the first attack, the others at the end: move them where they happen." />
+            <ItemsControl ItemsSource="{Binding DeckEffects}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DeckEffectViewModel">
+                  <DockPanel Margin="0,1" Background="Transparent" ToolTip.Tip="{Binding Tip}">
+                    <Button DockPanel.Dock="Right" Classes="icon small" Command="{Binding AddCommand}" ToolTip.Tip="Add to the turn"><mi:MaterialIcon Kind="Plus" /></Button>
+                    <TextBlock Classes="bodySmall wrap" VerticalAlignment="Center">
+                      <Run Text="{Binding Card}" FontWeight="SemiBold" />
+                      <Run Text="{Binding Kind, StringFormat='({0})'}" Foreground="{DynamicResource OnSurfaceVariant}" />
+                      <Run Text="{Binding What}" />
+                    </TextBlock>
+                  </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
           <!-- Climax, your deck, the opponent. -->
           <WrapPanel Margin="0,8,0,0">
             <Border Classes="section">
@@ -178,8 +279,7 @@
                   <Border CornerRadius="6" ClipToBounds="True" Background="Transparent" PointerEntered="OnClimaxEntered">
                     <Image Width="48" Height="67" ctl:Pictures.DecodeWidth="80" ctl:Pictures.Path="{Binding ClimaxImage}" />
                   </Border>
-                  <TextBlock Classes="bodySmall muted wrap" Width="150"
-                             Text="Out of your deck. Add its soul bonus to the soul of the characters it gives it to." />
+                  <TextBlock Classes="bodySmall muted wrap" Width="190" Text="{Binding ClimaxBonusText}" />
                 </StackPanel>
               </StackPanel>
             </Border>

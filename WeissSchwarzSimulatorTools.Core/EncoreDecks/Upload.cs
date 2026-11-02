@@ -72,7 +72,8 @@ public static class Upload
         {
             throw Errors.Context($"looking up {code} on encoredecks", e);
         }
-        var json = await Http.ReadJsonAsync(response);
+        // An unknown code is answered with 200 and the body "null".
+        var json = await Http.ReadNullableJsonAsync(response);
         return json is JsonObject obj && obj["_id"] is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : null;
     }
 

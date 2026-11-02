@@ -16,9 +16,25 @@
 // - a burn, maybe only when the last attack was cancelled, not cancelled, or its trigger check
 //   revealed a climax;
 // - a mill: the top cards of the opponent's deck go to their waiting room;
-// - a Musashi: reveals a card of the player's deck and deals its level + 1 damage. The card is
-//   drawn from the deck as it was at the start of the turn (Turn.Musashi), apart from the
-//   trigger checks.
+// - a Musashi: reveals a card of the player's deck and deals its level + the amount (usually 1)
+//   damage. The card is drawn from the deck as it was at the start of the turn (Turn.Musashi),
+//   apart from the trigger checks;
+// - a clock kick: cards from outside the opponent's deck (a character of their stage) go to their
+//   clock, which nothing cancels;
+// - a top-deck clock: the top cards of the opponent's deck go to their clock, uncancelled, even
+//   climaxes;
+// - a clock swap: the top card of the opponent's clock goes to their waiting room, and a card
+//   from outside their deck takes its place (no net damage; nothing when their clock is empty);
+// - what changes the opponent's deck: cards of their waiting room put on top of it (never a
+//   climax) or shuffled into it, a climax shuffled back into it, one of their characters put on
+//   top or at the bottom, their stock shuffled into it (and as many cards back to the stock),
+//   and the top cards looked at, where the player sends the climaxes away (to the waiting room,
+//   the bottom of the deck, or under the other cards) and the other cards back on top.
+//
+// The opponent's deck is shuffled, except for the cards put on top or at the bottom: those are
+// known, and come out in order, until the deck is shuffled.
+//
+// The sources can be set up by hand, or read from the cards (DamageEffects, TurnBuilder).
 //
 // The opponent refreshes when their deck runs out (waiting room shuffled back, plus 1
 // uncancellable damage), and levels up at 7 clock. Card power, battles and counters are not
@@ -59,10 +75,38 @@ public enum SourceKind
     ClimaxTriggerBurn,
     /// <summary>Put the top cards of the opponent's deck in their waiting room.</summary>
     Mill,
-    /// <summary>Reveal a card of the player's deck and deal its level + 1 damage.</summary>
+    /// <summary>Reveal a card of the player's deck and deal its level + the amount damage.</summary>
     Musashi,
     /// <summary>The same, if the last attack's damage was cancelled.</summary>
     CancelMusashi,
+    /// <summary>Put cards from outside the opponent's deck (a character…) into their clock: uncancellable.</summary>
+    ClockKick,
+    /// <summary>Put the top cards of the opponent's deck into their clock: uncancellable, climaxes too.</summary>
+    TopClock,
+    /// <summary>The top card of the opponent's clock goes to their waiting room, a character takes its place.</summary>
+    ClockSwap,
+    /// <summary>Non-climax cards of the opponent's waiting room go on top of their deck (or into it, shuffled).</summary>
+    WaitingRoomToDeck,
+    /// <summary>Climaxes of the opponent's waiting room are shuffled back into their deck.</summary>
+    ClimaxToDeck,
+    /// <summary>A character of the opponent goes on top of their deck (or into it, shuffled).</summary>
+    CharacterToTop,
+    /// <summary>A character of the opponent goes to the bottom of their deck.</summary>
+    CharacterToBottom,
+    /// <summary>Look at the top cards of the opponent's deck: the climaxes go away, the other cards back on top.</summary>
+    LookTop,
+    /// <summary>The opponent's stock is shuffled into their deck, and as many cards go back from the top to the stock.</summary>
+    StockToDeck,
+}
+
+/// <summary>Where the climaxes go when the player looks at the top of the opponent's deck (LookTop).</summary>
+public enum LookClimaxes
+{
+    WaitingRoom,
+    /// <summary>The bottom of the deck.</summary>
+    Bottom,
+    /// <summary>Back on top, under the other cards looked at.</summary>
+    Under,
 }
 
 public static class SourceKinds
@@ -78,7 +122,23 @@ public static class SourceKinds
         SourceKind.ClimaxTriggerBurn => "Burn on climax trigger",
         SourceKind.Mill => "Mill opponent",
         SourceKind.Musashi => "Musashi",
-        _ => "Musashi if cancelled",
+        SourceKind.CancelMusashi => "Musashi if cancelled",
+        SourceKind.ClockKick => "Clock kick",
+        SourceKind.TopClock => "Top deck to clock",
+        SourceKind.ClockSwap => "Clock swap",
+        SourceKind.WaitingRoomToDeck => "Waiting room to deck",
+        SourceKind.ClimaxToDeck => "Climax back to deck",
+        SourceKind.CharacterToTop => "Character to top of deck",
+        SourceKind.CharacterToBottom => "Character to bottom of deck",
+        SourceKind.LookTop => "Look at top cards",
+        _ => "Stock into deck",
+    };
+
+    public static string Label(this LookClimaxes to) => to switch
+    {
+        LookClimaxes.WaitingRoom => "Climaxes to waiting room",
+        LookClimaxes.Bottom => "Climaxes to bottom",
+        _ => "Climaxes under the others",
     };
 
     public static string Description(this SourceKind kind) => kind switch
@@ -91,13 +151,36 @@ public static class SourceKinds
         SourceKind.NotCancelledBurn => "If the last attack's damage was not cancelled, deal this much",
         SourceKind.ClimaxTriggerBurn => "If the last attack's trigger check revealed a climax, deal this much",
         SourceKind.Mill => "Put this many cards from the top of the opponent's deck into their waiting room",
-        SourceKind.Musashi => "Reveal a card of your deck (minus the stage and the climax) and deal its level + 1 damage",
-        _ => "If the last attack's damage was cancelled: reveal a card of your deck and deal its level + 1 damage",
+        SourceKind.Musashi => "Reveal a card of your deck (minus the stage and the climax) and deal its level + this much damage",
+        SourceKind.CancelMusashi => "If the last attack's damage was cancelled: reveal a card of your deck and deal its level + this much damage",
+        SourceKind.ClockKick => "Put this many cards that are not in the opponent's deck (a character…) into their clock: nothing cancels it",
+        SourceKind.TopClock => "Put this many cards from the top of the opponent's deck into their clock: nothing cancels it, climaxes included",
+        SourceKind.ClockSwap => "Put the top card of the opponent's clock into their waiting room, and a character into their clock: no damage in total",
+        SourceKind.WaitingRoomToDeck => "Put this many cards of the opponent's waiting room (never a climax) on top of their deck, or shuffle them into it",
+        SourceKind.ClimaxToDeck => "Shuffle this many climaxes of the opponent's waiting room back into their deck",
+        SourceKind.CharacterToTop => "Put this many of the opponent's characters on top of their deck (no climax there), or shuffle them into it",
+        SourceKind.CharacterToBottom => "Put this many of the opponent's characters at the bottom of their deck",
+        SourceKind.LookTop => "Look at this many cards from the top of the opponent's deck: the climaxes go away, the other cards back on top (then maybe shuffle)",
+        _ => "Shuffle the opponent's stock into their deck, then put as many cards from the top of it into their stock",
     };
 
-    /// <summary>Whether the amount matters: damage or cards milled.</summary>
+    /// <summary>Whether the deck can be shuffled after it (a checkbox).</summary>
+    public static bool CanShuffle(this SourceKind kind) => kind is SourceKind.WaitingRoomToDeck or SourceKind.CharacterToTop or SourceKind.LookTop;
+
+    /// <summary>Whether the amount matters: damage, cards, or for a Musashi what is added to the level.</summary>
     public static bool HasAmount(this SourceKind kind) =>
-        kind is not (SourceKind.Attack or SourceKind.Musashi or SourceKind.CancelMusashi);
+        kind is not (SourceKind.Attack or SourceKind.ClockSwap or SourceKind.StockToDeck);
+
+    public static bool IsMusashi(this SourceKind kind) => kind is SourceKind.Musashi or SourceKind.CancelMusashi;
+
+    /// <summary>What the amount counts.</summary>
+    public static string Unit(this SourceKind kind) => kind switch
+    {
+        SourceKind.Mill or SourceKind.ClockKick or SourceKind.TopClock or SourceKind.WaitingRoomToDeck or SourceKind.ClimaxToDeck
+            or SourceKind.CharacterToTop or SourceKind.CharacterToBottom or SourceKind.LookTop => "cards",
+        SourceKind.Musashi or SourceKind.CancelMusashi => "+ level",
+        _ => "damage",
+    };
 }
 
 /// <summary>How an attack is made.</summary>
@@ -111,11 +194,16 @@ public enum AttackKind
 }
 
 /// <summary>One source of damage of the turn.</summary>
-/// <param name="Amount">Damage, or cards milled. Unused by attacks and Musashi.</param>
+/// <param name="Amount">Damage, or cards; for a Musashi, what is added to the level. Unused by attacks and clock swaps.</param>
 /// <param name="Character">For an attack: which character attacks (0 to 2).</param>
 /// <param name="Attack">For an attack: how.</param>
 /// <param name="DefenderLevel">For a side attack: the level of the opponent's character in front of it.</param>
-public sealed record Source(SourceKind Kind, uint Amount, int Character = 0, AttackKind Attack = AttackKind.Front, uint DefenderLevel = 0)
+/// <param name="Origin">For a source read from a card: the card and when its effect happens.</param>
+/// <param name="Note">For a source read from a card: what was assumed (conditions, guessed amounts).</param>
+/// <param name="ClimaxTo">For a look at the top cards: where the climaxes go.</param>
+/// <param name="Shuffle">For a look, cards put on top: the deck is shuffled after.</param>
+public sealed record Source(SourceKind Kind, uint Amount, int Character = 0, AttackKind Attack = AttackKind.Front, uint DefenderLevel = 0,
+    string? Origin = null, string? Note = null, LookClimaxes ClimaxTo = LookClimaxes.WaitingRoom, bool Shuffle = false)
 {
     /// <summary>A front attack by <paramref name="character"/>.</summary>
     public static Source AttackBy(int character) => new(SourceKind.Attack, 0, character);
@@ -230,22 +318,22 @@ public sealed class Levels : IEquatable<Levels>
 
     public uint Total => (uint)Counts.Sum(n => (long)n);
 
-    /// <summary>The average damage of a Musashi (the level + 1 of a random card); null when there are no cards.</summary>
-    public double? MusashiDamage()
+    /// <summary>The average damage of a Musashi (the level + <paramref name="bonus"/> of a random card); null when there are no cards.</summary>
+    public double? MusashiDamage(uint bonus = 1)
     {
         var total = Total;
         if (total == 0) return null;
-        var sum = Counts.Select((n, level) => (long)(level + 1) * n).Sum();
+        var sum = Counts.Select((n, level) => (long)(level + bonus) * n).Sum();
         return (double)sum / total;
     }
 
-    /// <summary>The level + 1 of a random card, which stays in the deck; null when there are none.</summary>
-    internal uint? Musashi(Rng rng)
+    /// <summary>The level + <paramref name="bonus"/> of a random card, which stays in the deck; null when there are none.</summary>
+    internal uint? Musashi(Rng rng, uint bonus)
     {
         var pick = rng.Below(Total);
         for (var i = 0; i < Counts.Length; i++)
         {
-            if (pick < Counts[i]) return (uint)(i + 1);
+            if (pick < Counts[i]) return (uint)i + bonus;
             pick -= Counts[i];
         }
         return null;
@@ -455,7 +543,31 @@ public static class Simulator
                         opp.Damage(source.Amount, rng);
                         break;
                     case SourceKind.Musashi or SourceKind.CancelMusashi:
-                        if (turn.Musashi.Musashi(rng) is { } n) opp.Damage(n, rng);
+                        if (turn.Musashi.Musashi(rng, source.Amount) is { } n) opp.Damage(n, rng);
+                        break;
+                    case SourceKind.ClockKick:
+                        opp.Kick(source.Amount);
+                        break;
+                    case SourceKind.TopClock:
+                        opp.TopClock(source.Amount, rng);
+                        break;
+                    case SourceKind.ClockSwap:
+                        opp.Swap(rng);
+                        break;
+                    case SourceKind.WaitingRoomToDeck:
+                        opp.WaitingRoomToDeck(source.Amount, source.Shuffle);
+                        break;
+                    case SourceKind.ClimaxToDeck:
+                        opp.ClimaxToDeck(source.Amount);
+                        break;
+                    case SourceKind.CharacterToTop or SourceKind.CharacterToBottom:
+                        opp.CharacterToDeck(source.Amount, source.Kind == SourceKind.CharacterToBottom, source.Shuffle);
+                        break;
+                    case SourceKind.LookTop:
+                        opp.LookTop(source.Amount, source.ClimaxTo, source.Shuffle, rng);
+                        break;
+                    case SourceKind.StockToDeck:
+                        opp.StockToDeck(rng);
                         break;
                 }
                 stats.Happened++;
@@ -501,10 +613,62 @@ internal struct Pile
     }
 }
 
+/// <summary>
+/// The opponent's deck: shuffled cards, with known cards on top (Top[0] is the top card) and at
+/// the bottom (Bottom[0] is the bottom card).
+/// </summary>
+internal sealed class DeckZone
+{
+    public Pile Middle;
+    private List<bool>? _top;
+    private List<bool>? _bottom;
+
+    public uint Cards => Middle.Cards + (uint)(_top?.Count ?? 0) + (uint)(_bottom?.Count ?? 0);
+
+    /// <summary>Takes the top card; returns whether it is a climax. The deck must not be empty.</summary>
+    public bool Draw(Rng rng)
+    {
+        if (_top is { Count: > 0 })
+        {
+            var top = _top[0];
+            _top.RemoveAt(0);
+            return top;
+        }
+        if (Middle.Cards > 0) return Middle.Draw(rng);
+        var bottom = _bottom![^1];
+        _bottom.RemoveAt(_bottom.Count - 1);
+        return bottom;
+    }
+
+    public void PutTop(bool climax) => (_top ??= []).Insert(0, climax);
+
+    public void PutBottom(bool climax) => (_bottom ??= []).Insert(0, climax);
+
+    /// <summary>A card shuffled in (call Shuffle after, to forget the known cards too).</summary>
+    public void Add(bool climax) => Middle.Put(climax);
+
+    public void Shuffle()
+    {
+        foreach (var c in _top ?? []) Middle.Put(c);
+        foreach (var c in _bottom ?? []) Middle.Put(c);
+        _top?.Clear();
+        _bottom?.Clear();
+    }
+
+    /// <summary>Becomes <paramref name="pile"/>, shuffled.</summary>
+    public void Reset(Pile pile)
+    {
+        Middle = pile;
+        _top?.Clear();
+        _bottom?.Clear();
+    }
+}
+
 /// <summary>The opponent during one trial.</summary>
 internal sealed class Defender
 {
-    public Pile Deck;
+    public readonly DeckZone Deck = new();
+    public uint Stock;
     public Pile WaitingRoom;
     public Pile Clock;
     public uint Level;
@@ -514,7 +678,8 @@ internal sealed class Defender
 
     public Defender(Opponent o)
     {
-        Deck = new Pile { Cards = o.DeckCards, Climaxes = o.DeckClimaxes };
+        Deck.Reset(new Pile { Cards = o.DeckCards, Climaxes = o.DeckClimaxes });
+        Stock = o.Stock;
         WaitingRoom = new Pile { Cards = o.WaitingRoomCards, Climaxes = o.WaitingRoomClimaxes };
         // The cards already in the clock are not climaxes: a climax cancels damage.
         Clock = new Pile { Cards = Math.Min(o.Clock, Rules.ClockSize - 1) };
@@ -530,7 +695,7 @@ internal sealed class Defender
     {
         if (Deck.Cards == 0 && WaitingRoom.Cards > 0)
         {
-            Deck = WaitingRoom;
+            Deck.Reset(WaitingRoom);
             WaitingRoom = default;
             refreshes++;
         }
@@ -603,6 +768,110 @@ internal sealed class Defender
         WaitingRoom.PutAll(rest);
         Level++;
         if (Level >= Rules.LethalLevel) Dead = true;
+    }
+
+    /// <summary>Cards from outside the deck go to the clock, one by one: nothing cancels them.</summary>
+    public void Kick(uint n)
+    {
+        for (var i = 0u; i < n && !Dead; i++) PutInClock(false);
+    }
+
+    /// <summary>The top cards of the deck go to the clock, uncancelled, climaxes too.</summary>
+    public void TopClock(uint n, Rng rng)
+    {
+        uint refreshes = 0;
+        for (var i = 0u; i < n; i++)
+        {
+            if (Reveal(ref refreshes, rng) is not { } climax) break;
+            PutInClock(climax);
+        }
+        PayRefreshes(refreshes, rng);
+    }
+
+    /// <summary>The top card of the clock goes to the waiting room and a character takes its place; nothing when the clock is empty.</summary>
+    public void Swap(Rng rng)
+    {
+        if (Clock.Cards == 0) return;
+        WaitingRoom.Put(Clock.Draw(rng));
+        Clock.Put(false);
+    }
+
+    /// <summary>Non-climaxes of the waiting room go on top of the deck, or into it.</summary>
+    public void WaitingRoomToDeck(uint n, bool shuffle)
+    {
+        for (var i = 0u; i < n && WaitingRoom.Cards > WaitingRoom.Climaxes; i++)
+        {
+            WaitingRoom.Cards--;
+            if (shuffle) Deck.Add(false);
+            else Deck.PutTop(false);
+        }
+        if (shuffle) Deck.Shuffle();
+    }
+
+    /// <summary>Climaxes of the waiting room are shuffled into the deck.</summary>
+    public void ClimaxToDeck(uint n)
+    {
+        for (var i = 0u; i < n && WaitingRoom.Climaxes > 0; i++)
+        {
+            WaitingRoom.Cards--;
+            WaitingRoom.Climaxes--;
+            Deck.Add(true);
+        }
+        Deck.Shuffle();
+    }
+
+    /// <summary>Characters from the stage go on top of the deck, at its bottom, or into it.</summary>
+    public void CharacterToDeck(uint n, bool bottom, bool shuffle)
+    {
+        for (var i = 0u; i < n; i++)
+        {
+            if (shuffle) Deck.Add(false);
+            else if (bottom) Deck.PutBottom(false);
+            else Deck.PutTop(false);
+        }
+        if (shuffle) Deck.Shuffle();
+    }
+
+    /// <summary>
+    /// Looks at the top <paramref name="n"/> cards (fewer when the deck has fewer): the climaxes
+    /// go to <paramref name="to"/>, the other cards back on top.
+    /// </summary>
+    public void LookTop(uint n, LookClimaxes to, bool shuffle, Rng rng)
+    {
+        uint others = 0, climaxes = 0;
+        for (var i = 0u; i < n && Deck.Cards > 0; i++)
+        {
+            if (Deck.Draw(rng)) climaxes++;
+            else others++;
+        }
+        for (var i = 0u; i < climaxes; i++)
+        {
+            switch (to)
+            {
+                case LookClimaxes.WaitingRoom:
+                    WaitingRoom.Put(true);
+                    break;
+                case LookClimaxes.Bottom:
+                    Deck.PutBottom(true);
+                    break;
+                default:
+                    Deck.PutTop(true);
+                    break;
+            }
+        }
+        for (var i = 0u; i < others; i++) Deck.PutTop(false);
+        if (shuffle) Deck.Shuffle();
+    }
+
+    /// <summary>The stock is shuffled into the deck, then as many cards go from the top of it to the stock.</summary>
+    public void StockToDeck(Rng rng)
+    {
+        for (var i = 0u; i < Stock; i++) Deck.Add(false);
+        Deck.Shuffle();
+        uint refreshes = 0;
+        for (var i = 0u; i < Stock; i++)
+            if (Reveal(ref refreshes, rng) is null) break;
+        PayRefreshes(refreshes, rng);
     }
 
     public void Mill(uint n, Rng rng)

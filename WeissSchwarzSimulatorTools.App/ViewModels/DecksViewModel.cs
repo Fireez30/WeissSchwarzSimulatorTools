@@ -217,40 +217,22 @@ public sealed partial class DecksViewModel : ObservableObject
                 Rows.Add(MakeDeckRow(deck, 0, showFolder: true));
         }
         else
-            AddFolderRows("", 0, own);
+            DeckTree.Add(Rows, _folders, own, _expanded,
+                (folder, depth, count, open) => new FolderRow(folder, depth, count, open, folder == CurrentFolder)
+                {
+                    Toggle = new RelayCommand(() => ToggleFolder(folder)),
+                    NewFolder = new RelayCommand(() => NewFolderIn(folder)),
+                    Rename = new RelayCommand(() => RenameFolder(folder)),
+                    Move = new RelayCommand(() => MoveFolder(folder)),
+                    Delete = new RelayCommand(() => DeleteFolder(folder)),
+                },
+                (deck, depth) => MakeDeckRow(deck, depth, showFolder: false));
         foreach (var deck in sorted.Where(d => d.Ai && Matches(d)))
             AiDecks.Add(new DeckItem(deck, ShowFolder: true));
         SelectedAi = AiDecks.FirstOrDefault(d => d.File.Path == Picked?.File.Path);
         _selecting = false;
         foreach (var name in new[] { nameof(HasAiDecks), nameof(HasDecks), nameof(NoDecks), nameof(ShowSearch), nameof(NoMatch), nameof(OwnCount), nameof(EmptyText) })
             OnPropertyChanged(name);
-    }
-
-    /// <summary>The rows inside <paramref name="parent"/>: its subfolders first (with what is in the open ones), then its decks.</summary>
-    private void AddFolderRows(string parent, int depth, List<DeckFile> own)
-    {
-        var subfolders = _folders.Where(f => DeckFiles.ParentFolder(f) == parent).ToList();
-        var decks = own.Where(d => d.Folder == parent).ToList();
-        if (depth > 0 && subfolders.Count == 0 && decks.Count == 0)
-        {
-            Rows.Add(new EmptyFolderRow(depth));
-            return;
-        }
-        foreach (var folder in subfolders)
-        {
-            var expanded = _expanded.Contains(folder);
-            Rows.Add(new FolderRow(folder, depth, own.Count(d => DeckFiles.IsInFolder(d.Folder, folder)), expanded, folder == CurrentFolder)
-            {
-                Toggle = new RelayCommand(() => ToggleFolder(folder)),
-                NewFolder = new RelayCommand(() => NewFolderIn(folder)),
-                Rename = new RelayCommand(() => RenameFolder(folder)),
-                Move = new RelayCommand(() => MoveFolder(folder)),
-                Delete = new RelayCommand(() => DeleteFolder(folder)),
-            });
-            if (expanded) AddFolderRows(folder, depth + 1, own);
-        }
-        foreach (var deck in decks)
-            Rows.Add(MakeDeckRow(deck, depth, showFolder: false));
     }
 
     private DeckRow MakeDeckRow(DeckFile deck, int depth, bool showFolder) =>

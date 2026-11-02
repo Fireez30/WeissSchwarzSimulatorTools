@@ -241,15 +241,21 @@ In Settings, "Encore Decks account", sign in with your Encore Decks email and pa
 
 The "Damage" screen estimates how much damage a turn deals, by playing the turn many times with shuffled decks (1 000, 10 000 or 100 000 times).
 
-Pick one of your decks on the left, then set up the turn:
+Pick one of your decks on the left (in the tree of their folders, as on the Decks screen; the folders are only opened and closed here), then set up the turn:
 
-- **Stage**: the three characters on stage, taken from the deck, each with its soul. Enter the soul with every bonus already added (the climax's, the backrow's…): nothing is computed from the cards' texts.
+- **Stage**: the three characters on stage, taken from the deck, each with its soul. It starts as the card's soul: add the bonuses from other cards (the backrow's…). The climax's bonus is added for you, from the simulator's script of the climax: to every character when it gives soul to all of them, or to the characters you tick when it lets you choose (the first ones are ticked, as many as it allows; characters of the wrong colour or trait cannot be ticked).
 - **Damage**: the sources of damage of the turn, in the order they happen, as many as needed:
   - *Attack* by one of the three characters (front, side with the level of the character in front, or direct). The trigger check is drawn from your deck: its soul icons are added, a shot trigger deals 1 damage if the attack is cancelled. The soul a trigger gives stays on the character, so a character that stands again and attacks a second time keeps it.
   - *Burn*, *Burn if cancelled*, *Burn if not cancelled*, *Burn on climax trigger*: the conditions are about the last attack before it.
   - *Mill opponent*: cards from the top of the opponent's deck go to their waiting room.
-  - *Musashi* and *Musashi if cancelled*: a card revealed from your deck (the whole deck minus the stage and the climax) deals its level + 1 damage.
-- **Climax**: the climax played this turn. It is only shown (add its soul bonus to the soul of the characters it gives it to: some climaxes boost every character, others only one or two of your choice) and is out of your deck.
+  - *Musashi* and *Musashi if cancelled*: a card revealed from your deck (the whole deck minus the stage and the climax) deals its level + the amount (usually 1) damage.
+  - *Clock kick*: cards that are not in the opponent's deck (a character of their stage) go to their clock; nothing cancels it.
+  - *Top deck to clock*: the top cards of the opponent's deck go to their clock; nothing cancels it, climaxes included.
+  - *Clock swap*: the top card of the opponent's clock goes to their waiting room and a character takes its place (no damage in total).
+  - What changes the opponent's deck, and so where their climaxes are: *Waiting room to deck* (cards of their waiting room on top of their deck, never a climax, or shuffled into it), *Climax back to deck* (shuffled in), *Character to top / bottom of deck*, *Stock into deck* (their stock shuffled in, then as many cards back to the stock), and *Look at top cards*: the climaxes among them go to the waiting room, to the bottom of the deck or under the other cards (as the card allows), the other cards back on top, then maybe a shuffle. Cards put on top or at the bottom are known, and come out first (or last) until the deck is shuffled.
+
+  The list is read from the cards: when a character or the climax changes, it is rebuilt with the attacks and the damage effects of the stage and the climax around them (the simulator's card scripts are read: burns, clock kicks, top-deck clocks, Musashi, mills, abilities given to other characters, climax combos). Main phase and climax effects come first, then for each attack its "when attacking" effects, the attack, its "if cancelled / not cancelled" effects, its battle and end-of-attack effects, and the encore step effects last. What the turn cannot tell is assumed to go your way (costs paid, battles won, conditions met, the climaxes of the opponent's deck sent away when you look at it), and is shown under each effect; effects that let you choose what they do ("choose 1 of the following effects") get their own "Effect options" section, between the stage and the damage, with their options for each character that attacks with them (character 1 can take one option and character 2 another): the one dealing the most damage is used, pick another and the damage list follows; amounts that depend on the game (X = the number of…) are guessed as 1. Untick "Read the effects" to keep your own list; "Read the cards" rebuilds it. The other damage effects of the deck (events, acts, cards not on the stage) are listed below, to add by hand.
+- **Climax**: the climax played this turn, with the soul bonus read from it. It is out of your deck. When no bonus can be read, add it to the soul of the characters yourself.
 - **Your deck**: the cards left in your deck for the trigger checks: characters and events with no, one or two soul icons, climaxes with soul icons, and shot climaxes. It starts as the whole deck minus the stage and the climax; "Reset" sets it back.
 - **Opponent**: the cards and climaxes in their deck and waiting room (shuffled back when the deck runs out, with the refresh damage), their stock, level and clock. It starts as a deck just refreshed: level 3, 8 stock, no climax out of the deck. Cards added to the stock, level or clock come from the deck; "Refreshed deck" sets the deck back.
 
@@ -271,8 +277,18 @@ Settings :
 ![Settings](documentation/images/settings.png "Settings")
 
 ## Release note 
+Last (0.2.1) :
 
-Last (0.2.0) :
+- Updated damage simulator to include the code of cards and fill automatically
+- Automatically distribute climax souls: to all the characters, or to the ones you tick when the climax lets you choose
+- Effects that let you choose what they do (climax combos with options…): pick the option for each character, in their own section, the turn is rebuilt with it
+- The Damage screen's deck list is the tree of deck folders, as on the Decks screen
+- Read the effects that change the opponent's deck: cards put on top or at the bottom of it, shuffled into it, the top cards looked at with the climaxes sent away, the stock shuffled in
+- Fixed the trigger icons of cards whose script says "Trigger DoubleSoul", "Trigger Book"…: they had none (their soul was missing from trigger checks)
+- Implement tree like UI deck picker for Damage Simulator 
+- Emergency fix : upload not working to encoredecks
+
+0.2.0 :
 
 - Added deck tags (up to 4 per deck, as in the simulator) when creating or editing a deck; tags used before are remembered and suggested
 - Adapted decks to new simulator setup using tree-like structure, used for deck saving, deck import, deck management

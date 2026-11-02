@@ -210,7 +210,7 @@ public class DamageSimTests
     {
         var t = new Turn
         {
-            Sources = [new Source(SourceKind.Musashi, 0), new Source(SourceKind.Musashi, 0)],
+            Sources = [new Source(SourceKind.Musashi, 1), new Source(SourceKind.Musashi, 1)],
             Musashi = new Levels(0, 0, 10, 0),
         };
         Assert.Equal(100u, Sim.Simulate(t, Opp(30, 0), 100, 6).Histogram[6]);

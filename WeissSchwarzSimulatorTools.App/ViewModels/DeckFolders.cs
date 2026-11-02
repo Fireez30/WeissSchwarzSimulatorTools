@@ -1,5 +1,6 @@
-// Deck folders: the rows of the deck tree of the Decks screen, and the dialogs that name a folder
-// or pick where a deck or folder goes.
+// Deck folders: the rows of the deck tree (of the Decks screen, where folders are managed, and
+// of the Damage screen, where decks are only picked), and the dialogs that name a folder or pick
+// where a deck or folder goes.
 //
 // The simulator lets decks live in folders and subfolders of Decks; the tree shows them the same
 // way. Folders are named by their path relative to Decks ("ReZero/Test"; "" is Decks itself).
@@ -71,24 +72,54 @@ public abstract record DeckTreeRow(int Depth)
     public double IndentWidth => Depth * 16;
 }
 
-/// <summary>A folder of the deck tree; a click opens or closes it.</summary>
+/// <summary>A folder of the deck tree; a click opens or closes it. The other commands manage it (Decks screen only).</summary>
 public sealed record FolderRow(string Folder, int Depth, int Count, bool Expanded, bool IsCurrent) : DeckTreeRow(Depth)
 {
     public string Name => FolderLabels.Name(Folder);
     public string CountText => Count.ToString();
     public bool Collapsed => !Expanded;
     public required ICommand Toggle { get; init; }
-    public required ICommand NewFolder { get; init; }
-    public required ICommand Rename { get; init; }
-    public required ICommand Move { get; init; }
-    public required ICommand Delete { get; init; }
+    public ICommand? NewFolder { get; init; }
+    public ICommand? Rename { get; init; }
+    public ICommand? Move { get; init; }
+    public ICommand? Delete { get; init; }
 }
 
-/// <summary>A deck of the deck tree; a click opens it.</summary>
+/// <summary>A deck of the deck tree; a click opens it. Move: Decks screen only.</summary>
 public sealed record DeckRow(DeckItem Item, int Depth, bool IsSelected) : DeckTreeRow(Depth)
 {
     public required ICommand Open { get; init; }
-    public required ICommand Move { get; init; }
+    public ICommand? Move { get; init; }
+}
+
+/// <summary>Fills a deck tree: the folders, and the decks of the open ones.</summary>
+public static class DeckTree
+{
+    /// <summary>
+    /// Adds the rows inside <paramref name="parent"/> (at <paramref name="depth"/>): its subfolders
+    /// first, with what is in the open ones, then its decks. <paramref name="folders"/> is every
+    /// folder, <paramref name="decks"/> every deck to show (in order).
+    /// </summary>
+    public static void Add(ICollection<DeckTreeRow> rows, IReadOnlyList<string> folders, IReadOnlyList<DeckFile> decks,
+        IReadOnlySet<string> expanded, Func<string, int, int, bool, FolderRow> folderRow, Func<DeckFile, int, DeckRow> deckRow,
+        string parent = "", int depth = 0)
+    {
+        var subfolders = folders.Where(f => DeckFiles.ParentFolder(f) == parent).ToList();
+        var inside = decks.Where(d => d.Folder == parent).ToList();
+        if (depth > 0 && subfolders.Count == 0 && inside.Count == 0)
+        {
+            rows.Add(new EmptyFolderRow(depth));
+            return;
+        }
+        foreach (var folder in subfolders)
+        {
+            var open = expanded.Contains(folder);
+            rows.Add(folderRow(folder, depth, decks.Count(d => DeckFiles.IsInFolder(d.Folder, folder)), open));
+            if (open) Add(rows, folders, decks, expanded, folderRow, deckRow, folder, depth + 1);
+        }
+        foreach (var deck in inside)
+            rows.Add(deckRow(deck, depth));
+    }
 }
 
 /// <summary>Under an open folder with nothing in it.</summary>

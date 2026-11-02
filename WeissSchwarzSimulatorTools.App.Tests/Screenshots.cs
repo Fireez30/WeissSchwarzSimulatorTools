@@ -111,10 +111,16 @@ public class Screenshots
             vm.Dialog?.Close();
 
             vm.SwitchTo(Screen.Damage);
-            vm.Damage.SelectedOwn = vm.Damage.OwnDecks.FirstOrDefault();
+            vm.Damage.Rows.OfType<DeckRow>().FirstOrDefault()?.Open.Execute(null);
             WaitUntil(() => vm.Damage.HasPicked);
             var slots = vm.Damage.Slots;
-            for (var i = 0; i < slots.Count; i++) slots[i].Choice = slots[i].Choices[Math.Min(i + 1, slots[i].Choices.Count - 1)];
+            // Characters with damage effects first, so the sources read from the cards show.
+            // A climax whose soul goes to characters to choose, when the deck has one: its boxes show.
+            vm.Damage.Climax = vm.Damage.ClimaxChoices.Skip(1).FirstOrDefault(c => DamageSim.DamageEffects.ClimaxSouls(c.Card!).Any(b => b.Choose > 0))
+                ?? vm.Damage.ClimaxChoices[Math.Min(1, vm.Damage.ClimaxChoices.Count - 1)];
+            var withEffects = slots[0].Choices.Where(c => c.Card is { } card && DamageSim.DamageEffects.Read(card, vm.Damage.Climax.Card).Count > 0).ToList();
+            for (var i = 0; i < slots.Count; i++)
+                slots[i].Choice = i < withEffects.Count ? withEffects[i] : slots[i].Choices[Math.Min(i + 1, slots[i].Choices.Count - 1)];
             vm.Damage.RunCommand.Execute(null);
             WaitUntil(() => vm.Damage.HasResults);
             Save(window, $"damage-{suffix}");

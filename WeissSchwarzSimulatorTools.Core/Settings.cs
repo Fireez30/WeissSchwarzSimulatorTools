@@ -30,6 +30,8 @@ public sealed class Settings
     public const char TagSeparator = '|';
     /// <summary>The deck folders left open in the Decks screen's tree, separated by <see cref="TagSeparator"/>.</summary>
     public const string DeckFoldersOpen = "ui_deck_folders_open";
+    /// <summary>The deck folders left open in the Damage screen's tree, separated by <see cref="TagSeparator"/>.</summary>
+    public const string DamageFoldersOpen = "ui_damage_folders_open";
     /// <summary>The deck folder the Encore Deck screen imports into: the last one used ("" for Decks itself).</summary>
     public const string ImportFolder = "encoredecks_import_folder";
 

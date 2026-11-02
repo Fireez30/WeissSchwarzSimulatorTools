@@ -104,6 +104,23 @@ public static class CardFile
         };
     }
 
+    /// <summary>Trigger line -> trigger icons; null for an icon this program does not know.</summary>
+    private static Trigger?[]? TriggerLine(string name) => name switch
+    {
+        "Soul" => [Trigger.Soul, null],
+        "DoubleSoul" => [Trigger.Soul, Trigger.Soul],
+        "Book" => [Trigger.Book, null],
+        "Gate" => [Trigger.Pant, Trigger.Soul],
+        "Door" => [Trigger.Salvage, null],
+        "Standby" => [Trigger.Standby, Trigger.Soul],
+        "Bar" => [Trigger.Bar, null],
+        "Bag" => [Trigger.Bag, null],
+        "Wind" => [Trigger.Wind, null],
+        "Choice" => [Trigger.Choice, null],
+        "Shot" => [Trigger.Burn, Trigger.Soul],
+        _ => null,
+    };
+
     /// <summary>Everything from the first '(' (or the whole string when there is none) is the parameter list.</summary>
     private static (string Prefix, List<string>? Params) SplitParams(string s)
     {
@@ -256,8 +273,8 @@ public static class CardFile
             }
             else if (After(line, "Trigger ") is { } trigger)
             {
-                if (trigger.Trim() == "Soul")
-                    d.Triggers = [Trigger.Soul, null];
+                if (TriggerLine(trigger.Trim()) is { } triggers)
+                    d.Triggers = triggers;
             }
             else if (After(line, "Trait") is { } trait)
             {
@@ -274,6 +291,9 @@ public static class CardFile
                         if (markerColor is { } c)
                             d.Color = c;
                     }
+                    // The marker's script (its soul bonus…), for the damage calculator.
+                    if (FindDefinition(reference, effects.Script).Text is not null)
+                        d.Code.Append(ExpandScriptLine(line.Trim(), effects, 0));
                 }
                 else
                 {

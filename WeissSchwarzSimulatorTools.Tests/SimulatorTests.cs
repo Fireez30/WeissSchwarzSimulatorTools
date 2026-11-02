@@ -160,6 +160,31 @@ public class CardFileTests
     }
 
     [Fact]
+    public void ClimaxMarkerScriptAndTriggerLines()
+    {
+        var effects = CommonEffects.Parse("Define: DoorClimax\n\tCont: GiveAll\n\t{\n\t\tGainSoul 1\n\t}\n\tText Cont: All get +1 soul.\n");
+        var cards = CardFile.Parse("""
+            Climax: T/W01-100
+            Name Door
+            *DoorClimax
+            EndCard
+
+            Climax: T/W01-101
+            Name Custom
+            Trigger DoubleSoul
+            Auto: OnPlay
+            {
+            	GainSoul 2
+            }
+            EndCard
+
+            """, "/nonexistent", "/nonexistent", effects);
+        Assert.Contains("GainSoul 1", cards["T/W01-100"].Code);
+        Assert.Equal([Trigger.Salvage], cards["T/W01-100"].Triggers);
+        Assert.Equal([Trigger.Soul, Trigger.Soul], cards["T/W01-101"].Triggers);
+    }
+
+    [Fact]
     public void Character()
     {
         var c = Parse()["KS/W49-E001"];
