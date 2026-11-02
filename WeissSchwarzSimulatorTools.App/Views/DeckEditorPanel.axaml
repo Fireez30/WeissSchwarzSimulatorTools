@@ -21,6 +21,11 @@
             </Style>
           </TextBlock.Styles>
         </TextBlock>
+        <DockPanel IsVisible="{Binding HasFolders}">
+          <TextBlock Classes="label muted" DockPanel.Dock="Left" Text="Folder" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Folders}" SelectedItem="{Binding Folder}" MaxDropDownHeight="360"
+                    ToolTip.Tip="The folder of the simulator's Decks the deck is saved in" />
+        </DockPanel>
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock Classes="label muted" Text="Sleeve" VerticalAlignment="Center" />
           <v:SleevePickerView DataContext="{Binding SleevePicker}" />

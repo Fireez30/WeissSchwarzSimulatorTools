@@ -346,6 +346,101 @@ public class DeckFilesTests
         Assert.Throws<UserException>(() => DeckFiles.Update(renamed.Path, "beta", "e", "", more));
         Assert.True(File.Exists(renamed.Path));
     }
+
+    [Fact]
+    public void Subfolders()
+    {
+        // As the simulator lays them out: decks at the top, in folders and in subfolders.
+        using var dir = new TempDir();
+        string[] codes = ["RZ/S116-004"];
+        var root = dir.Join("Decks");
+        DeckFiles.SaveNew(root, "Top", "d", "", codes);
+        DeckFiles.SaveNew(Path.Combine(root, "ReZero"), "RZ 8 gates", "d", "", codes);
+        DeckFiles.SaveNew(Path.Combine(root, "ReZero", "Test"), "Rem and Ram", "d", "", codes);
+        Directory.CreateDirectory(Path.Combine(root, "Empty"));
+        dir.Write("Decks/.aidecks_cache/AI_Bot.txt.fingerprint", "1|2");
+        dir.Write("Decks/.hidden/Hidden.txt", DeckFiles.Format("Hidden", "d", "", codes));
+
+        Assert.Equal(["Empty", "ReZero", "ReZero/Test"], DeckFiles.Folders(root));
+        Assert.Equal([("Rem and Ram", "ReZero/Test"), ("RZ 8 gates", "ReZero"), ("Top", "")],
+            DeckFiles.List(root).Select(d => (d.Name, d.Folder)));
+
+        // Names only need to be unique inside a folder.
+        var other = DeckFiles.SaveNew(Path.Combine(root, "Empty"), "Top", "d", "", codes);
+        Assert.Equal("Top", other.Name);
+        Assert.Equal("Top (2)", DeckFiles.SaveNew(root, "Top", "d", "", codes).Name);
+        File.Delete(other.Path);
+    }
+
+    [Fact]
+    public void FolderPaths()
+    {
+        Assert.Equal("", DeckFiles.ParentFolder("ReZero"));
+        Assert.Equal("ReZero", DeckFiles.ParentFolder("ReZero/Test"));
+        Assert.Equal("Test", DeckFiles.FolderName("ReZero/Test"));
+        Assert.Equal("ReZero/Test", DeckFiles.JoinFolder("ReZero", "Test"));
+        Assert.True(DeckFiles.IsInFolder("ReZero/Test", "ReZero"));
+        Assert.True(DeckFiles.IsInFolder("ReZero", ""));
+        Assert.False(DeckFiles.IsInFolder("ReZero2", "ReZero"));
+
+        Assert.Equal(Path.Combine("r", "a", "b"), DeckFiles.FolderPath("r", "a/b"));
+        foreach (var bad in new[] { "..", "a/../..", "a//b", ".aidecks_cache" })
+            Assert.Throws<UserException>(() => DeckFiles.FolderPath("r", bad));
+
+        Assert.Null(DeckFiles.FolderNameProblem("OSK 8 door"));
+        foreach (var bad in new[] { "", " ", " a", "a.", ".a", "a/b", "a\\b", "a:b", "a?", "con", "COM1.txt" })
+            Assert.NotNull(DeckFiles.FolderNameProblem(bad));
+    }
+
+    [Fact]
+    public void ManageFolders()
+    {
+        using var dir = new TempDir();
+        string[] codes = ["RZ/S116-004"];
+        var root = dir.Join("Decks");
+        Directory.CreateDirectory(root);
+
+        Assert.Equal("ReZero", DeckFiles.CreateFolder(root, "", "ReZero"));
+        Assert.Equal("ReZero/Test", DeckFiles.CreateFolder(root, "ReZero", "Test"));
+        Assert.Throws<UserException>(() => DeckFiles.CreateFolder(root, "", "rezero"));
+        Assert.Throws<UserException>(() => DeckFiles.CreateFolder(root, "", "a/b"));
+        Assert.Equal("Other", DeckFiles.CreateFolder(root, "", "Other"));
+
+        var deck = DeckFiles.SaveNew(DeckFiles.FolderPath(root, "ReZero/Test"), "Rem", "d", "", codes);
+        Assert.Equal("ReZero/Test", Assert.Single(DeckFiles.List(root)).Folder);
+
+        // Renaming and moving take the decks along.
+        Assert.Equal("ReZero/Tests", DeckFiles.RenameFolder(root, "ReZero/Test", "Tests"));
+        Assert.Equal("ReZero/tests", DeckFiles.RenameFolder(root, "ReZero/Tests", "tests"));
+        Assert.Throws<UserException>(() => DeckFiles.RenameFolder(root, "Other", "REZERO"));
+        Assert.Throws<UserException>(() => DeckFiles.MoveFolder(root, "ReZero", "ReZero/tests"));
+        Assert.Equal("Other/ReZero", DeckFiles.MoveFolder(root, "ReZero", "Other"));
+        Assert.Equal(["Other", "Other/ReZero", "Other/ReZero/tests"], DeckFiles.Folders(root));
+        deck = Assert.Single(DeckFiles.List(root));
+        Assert.Equal(("Rem", "Other/ReZero/tests"), (deck.Name, deck.Folder));
+
+        // A folder with decks is never deleted.
+        Assert.False(DeckFiles.IsEmptyFolder(root, "Other"));
+        Assert.Throws<UserException>(() => DeckFiles.DeleteFolder(root, "Other"));
+
+        // Moving a deck keeps its file name; a folder with a deck of the same name refuses it.
+        var moved = DeckFiles.MoveDeck(root, deck.Path, "");
+        Assert.Equal(Path.Combine(root, Path.GetFileName(deck.Path)), moved.Path);
+        Assert.Equal(("Rem", ""), (moved.Name, moved.Folder));
+        Assert.False(File.Exists(deck.Path));
+        var twin = DeckFiles.SaveNew(DeckFiles.FolderPath(root, "Other"), "rem", "d", "", codes);
+        Assert.Throws<UserException>(() => DeckFiles.MoveDeck(root, moved.Path, "Other"));
+        Assert.True(File.Exists(moved.Path));
+        Assert.Throws<UserException>(() => DeckFiles.MoveDeck(root, moved.Path, "Missing"));
+        File.Delete(twin.Path);
+
+        // Empty folders (with empty subfolders) can go.
+        Assert.True(DeckFiles.IsEmptyFolder(root, "Other"));
+        DeckFiles.DeleteFolder(root, "Other");
+        Assert.Empty(DeckFiles.Folders(root));
+        Assert.Throws<UserException>(() => DeckFiles.DeleteFolder(root, ""));
+        Assert.Single(DeckFiles.List(root));
+    }
 }
 
 public class SleevesTests

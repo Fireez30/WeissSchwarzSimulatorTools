@@ -258,7 +258,7 @@ public sealed partial class DamageViewModel : ObservableObject
         OwnDecks.Clear();
         AiDecks.Clear();
         foreach (var deck in _decks.Where(d => query.Length == 0 || d.Name.Contains(query, StringComparison.OrdinalIgnoreCase)))
-            (deck.Ai ? AiDecks : OwnDecks).Add(new DeckItem(deck with { Date = "" }));
+            (deck.Ai ? AiDecks : OwnDecks).Add(new DeckItem(deck with { Date = "" }, ShowFolder: true));
         SelectedOwn = OwnDecks.FirstOrDefault(d => d.File.Path == Picked?.Path);
         SelectedAi = AiDecks.FirstOrDefault(d => d.File.Path == Picked?.Path);
         _selecting = false;

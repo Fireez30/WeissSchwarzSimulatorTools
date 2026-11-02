@@ -30,8 +30,8 @@ public sealed record EditorGroupViewModel(string Title, int Count, IReadOnlyList
 public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
 {
     private readonly DeckList _list;
-    /// <summary>Names of the other decks, to warn about duplicates.</summary>
-    private readonly IReadOnlyList<string> _takenNames;
+    /// <summary>Names of the other decks of a folder, to warn about duplicates.</summary>
+    private readonly Func<string, IReadOnlyList<string>> _takenNames;
     /// <summary>Tags used before, offered as suggestions.</summary>
     private readonly IReadOnlyList<string> _knownTags;
     private readonly Action<DeckEditorViewModel> _save;
@@ -42,12 +42,16 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
     public CardBrowserViewModel Browser { get; }
     public SleevePickerViewModel SleevePicker { get; }
 
-    public DeckEditorViewModel(string name, string? target, string sleeve, IReadOnlyList<string> tags, IReadOnlyList<string> knownTags,
-        Func<string> sleevesDir, DeckList list, IReadOnlyList<string> takenNames, IReadOnlyList<Serie> series,
+    /// <param name="folder">The deck's folder (see <see cref="DeckFile.Folder"/>), one of <paramref name="folders"/>.</param>
+    public DeckEditorViewModel(string name, string? target, string folder, IReadOnlyList<Option<string>> folders, string sleeve,
+        IReadOnlyList<string> tags, IReadOnlyList<string> knownTags, Func<string> sleevesDir, DeckList list,
+        Func<string, IReadOnlyList<string>> takenNames, IReadOnlyList<Serie> series,
         Action<DeckEditorViewModel> save, Action<DeckEditorViewModel> cancel)
     {
         _name = name;
         Target = target;
+        Folders = folders;
+        _folder = folders.FirstOrDefault(f => f.Value == folder) ?? folders.FirstOrDefault() ?? new Option<string>("", FolderLabels.Root);
         _list = list;
         _takenNames = takenNames;
         _knownTags = knownTags;
@@ -73,6 +77,21 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NameHint), nameof(HasNameHint), nameof(NameTaken), nameof(CanSave))]
     private string _name;
+
+    /// <summary>The folders the deck can be saved to.</summary>
+    public IReadOnlyList<Option<string>> Folders { get; }
+    public bool HasFolders => Folders.Count > 1;
+
+    /// <summary>The folder the deck is saved to.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NameHint), nameof(HasNameHint), nameof(NameTaken))]
+    private Option<string> _folder;
+
+    partial void OnFolderChanged(Option<string> value)
+    {
+        Dirty = true;
+        Error = null;
+    }
 
     partial void OnNameChanged(string value)
     {
@@ -119,11 +138,11 @@ public sealed partial class DeckEditorViewModel : ObservableObject, IPicker
     public string Sleeve => SleevePicker.Current;
     public IReadOnlyList<string> Codes => _list.Codes();
 
-    public bool NameTaken => _takenNames.Any(n => n.Equals(Name.Trim(), StringComparison.OrdinalIgnoreCase));
+    public bool NameTaken => _takenNames(Folder.Value).Any(n => n.Equals(Name.Trim(), StringComparison.OrdinalIgnoreCase));
     public string? NameHint => Name.Trim().Length == 0 ? "Give the deck a name to save it."
         : !NameTaken ? null
-        : Target is not null ? "Another deck already has this name."
-        : $"A deck with this name exists: it will be saved as \"{Name.Trim()} (2)\".";
+        : Target is not null ? "Another deck of this folder already has this name."
+        : $"A deck of this folder has this name: it will be saved as \"{Name.Trim()} (2)\".";
     public bool HasNameHint => NameHint is not null;
 
     public int Total => _list.Total;

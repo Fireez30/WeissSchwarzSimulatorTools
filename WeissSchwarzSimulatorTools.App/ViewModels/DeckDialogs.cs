@@ -9,9 +9,27 @@ using WeissSchwarzSimulatorTools.Simulator;
 
 namespace WeissSchwarzSimulatorTools.App.ViewModels;
 
-/// <summary>The Import dialog: paste an Encore Decks link, and the deck is saved in the simulator.</summary>
-public sealed partial class ImportDialogViewModel(Func<string, Task> import) : DialogViewModel
+/// <summary>The Import dialog: paste an Encore Decks link and pick a folder, and the deck is saved in the simulator.</summary>
+public sealed partial class ImportDialogViewModel : DialogViewModel
 {
+    /// <summary>Imports a link into a folder (see <see cref="DeckFile.Folder"/>).</summary>
+    private readonly Func<string, string, Task> _import;
+
+    /// <param name="folders">The folders the deck can go to; <paramref name="folder"/> is picked first.</param>
+    public ImportDialogViewModel(Func<string, string, Task> import, IReadOnlyList<Option<string>> folders, string folder)
+    {
+        _import = import;
+        Folders = folders;
+        _folder = FolderLabels.Pick(folders, folder);
+    }
+
+    /// <summary>The folders of the simulator's Decks folder the deck can be saved to.</summary>
+    public IReadOnlyList<Option<string>> Folders { get; }
+
+    /// <summary>The folder the deck is saved to.</summary>
+    [ObservableProperty]
+    private Option<string> _folder;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsValid), nameof(Hint), nameof(HintOk), nameof(HintError), nameof(CanImport))]
     private string _link = "";
@@ -38,7 +56,7 @@ public sealed partial class ImportDialogViewModel(Func<string, Task> import) : D
         Running = true;
         try
         {
-            await import(Link.Trim());
+            await _import(Link.Trim(), Folder.Value);
         }
         finally
         {
@@ -48,9 +66,9 @@ public sealed partial class ImportDialogViewModel(Func<string, Task> import) : D
     }
 
     /// <summary>What to tell the user once <paramref name="deck"/> is imported.</summary>
-    public static string Message(Deck deck)
+    public static string Message(Deck deck, string folder)
     {
-        var message = $"Imported \"{deck.Name}\" ({deck.Cards.Count} cards) into the simulator decks.";
+        var message = $"Imported \"{deck.Name}\" ({deck.Cards.Count} cards) into {FolderLabels.Path(folder)}.";
         if (deck.Unmatched.Count > 0) message += $" {deck.Unmatched.Count} code(s) matched no card.";
         return message;
     }

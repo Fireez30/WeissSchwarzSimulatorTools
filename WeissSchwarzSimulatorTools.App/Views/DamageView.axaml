@@ -45,6 +45,7 @@
                     <StackPanel>
                       <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                       <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                      <TextBlock Classes="bodySmall muted" Text="{Binding FolderText}" IsVisible="{Binding HasFolder}" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
                   </DataTemplate>
                 </ListBox.ItemTemplate>

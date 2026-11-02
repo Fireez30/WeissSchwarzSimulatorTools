@@ -1,0 +1,48 @@
+<!-- Picks the folder a deck or a folder moves to. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="WeissSchwarzSimulatorTools.App.Views.MoveDialog"
+             x:DataType="vm:MoveDialogViewModel">
+  <DockPanel Width="460">
+    <StackPanel DockPanel.Dock="Top" Spacing="8">
+      <mi:MaterialIcon Kind="FolderMoveOutline" Width="28" Height="28" Classes="primary" />
+      <TextBlock Classes="headline wrap" Text="{Binding Title}" HorizontalAlignment="Center" TextAlignment="Center" />
+      <TextBlock Classes="muted wrap" Text="{Binding Message}" />
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
+      <TextBlock Classes="bodySmall muted wrap" Text="{Binding Destination}" />
+      <Border Background="{DynamicResource ErrorContainer}" CornerRadius="12" Padding="12" IsVisible="{Binding HasError}">
+        <TextBlock Text="{Binding Error}" Foreground="{DynamicResource OnErrorContainer}" TextWrapping="Wrap" />
+      </Border>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,4,0,0">
+        <Button Classes="text" Content="Cancel" Command="{Binding CloseCommand}" />
+        <Button Classes="filled" Content="Move here" Command="{Binding ConfirmCommand}" IsEnabled="{Binding CanConfirm}" />
+      </StackPanel>
+    </StackPanel>
+    <DockPanel.Styles>
+      <Style Selector="DockPanel.unavailable">
+        <Setter Property="Opacity" Value="0.6" />
+      </Style>
+    </DockPanel.Styles>
+    <ScrollViewer MaxHeight="420" Margin="0,12,0,0">
+      <ListBox Classes="plain rows" ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:FolderChoice">
+            <DockPanel Classes.unavailable="{Binding !IsEnabled}" ToolTip.Tip="{Binding Why}">
+              <Border DockPanel.Dock="Left" Width="{Binding IndentWidth}" />
+              <mi:MaterialIcon Kind="FolderOutline" DockPanel.Dock="Left" Width="20" Height="20" Classes="primary" Margin="0,0,8,0"
+                               IsVisible="{Binding IsEnabled}" />
+              <mi:MaterialIcon Kind="FolderCancelOutline" DockPanel.Dock="Left" Width="20" Height="20" Classes="muted" Margin="0,0,8,0"
+                               IsVisible="{Binding !IsEnabled}" />
+              <TextBlock Classes="bodySmall muted" DockPanel.Dock="Right" Text="{Binding Why}" VerticalAlignment="Center" Margin="8,0,0,0"
+                         IsVisible="{Binding !IsEnabled}" />
+              <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            </DockPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

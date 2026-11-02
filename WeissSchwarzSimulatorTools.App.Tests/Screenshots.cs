@@ -89,9 +89,17 @@ public class Screenshots
             vm.Cards.ShowGridCommand.Execute(null);
 
             vm.SwitchTo(Screen.Decks);
+            // Every folder of the tree open.
+            while (vm.Decks.Rows.OfType<FolderRow>().FirstOrDefault(f => !f.Expanded) is { } closed) closed.Toggle.Execute(null);
             Save(window, $"decks-{suffix}");
-            vm.Decks.SelectedOwn = vm.Decks.OwnDecks.FirstOrDefault();
+            vm.Decks.OpenFirst();
             Save(window, $"decks-open-{suffix}");
+            vm.Decks.NewFolderCommand.Execute(null);
+            Save(window, $"dialog-new-folder-{suffix}");
+            vm.Dialog?.Close();
+            vm.Decks.MoveCommand.Execute(null);
+            Save(window, $"dialog-move-{suffix}");
+            vm.Dialog?.Close();
             vm.Decks.EditCommand.Execute(null);
             Save(window, $"deck-editor-{suffix}");
             vm.Decks.Editor?.CancelCommand.Execute(null);

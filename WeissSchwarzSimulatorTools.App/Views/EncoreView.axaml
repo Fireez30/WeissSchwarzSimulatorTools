@@ -92,9 +92,13 @@
             <TextBlock Classes="muted" Text="{Binding SavedText}" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Classes="filled" Command="{Binding ImportCommand}" IsEnabled="{Binding CanImport}"
-                      ToolTip.Tip="Save this deck as a new file in the simulator's Decks folder; existing decks are never overwritten">
+                      ToolTip.Tip="Save this deck as a new file in the folder picked next to it; existing decks are never overwritten">
                 <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="Download" /><TextBlock Text="Import" /></StackPanel>
               </Button>
+              <TextBlock Classes="label muted" Text="into" VerticalAlignment="Center" IsVisible="{Binding HasFolders}" />
+              <ComboBox MinWidth="200" MaxWidth="360" ItemsSource="{Binding Folders}" SelectedItem="{Binding ImportFolder}" MaxDropDownHeight="360"
+                        IsVisible="{Binding HasFolders}" IsEnabled="{Binding CanImport}" VerticalAlignment="Center"
+                        ToolTip.Tip="The folder of the simulator's Decks the deck is saved in" />
               <Button Classes="outlined" Command="{Binding OpenOnSiteCommand}" ToolTip.Tip="Open this deck in your browser">
                 <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="OpenInNew" /><TextBlock Text="Open on the site" /></StackPanel>
               </Button>

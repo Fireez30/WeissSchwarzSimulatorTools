@@ -1,6 +1,6 @@
 <!--
-  The Decks screen: the decks saved in the simulator on the left, the open deck in the middle (its
-  stats and cards), the hovered card on the right. While a deck is being built, the deck editor
+  The Decks screen: the decks saved in the simulator on the left (a tree of their folders), the open
+  deck in the middle (its stats and cards), the hovered card on the right. While a deck is being built, the deck editor
   takes the whole screen.
 -->
 <UserControl xmlns="https://github.com/avaloniaui"
@@ -20,13 +20,16 @@
     </v:CardBrowserView>
 
     <DockPanel IsVisible="{Binding IsBrowsing}">
-      <!-- The deck list. -->
-      <Border DockPanel.Dock="Left" Width="300" Margin="16,16,8,16" Classes="card" Padding="12">
+      <!-- The deck list: the tree of the Decks folder, then the AI opponents. -->
+      <Border DockPanel.Dock="Left" Width="320" Margin="16,16,8,16" Classes="card" Padding="12">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8">
             <DockPanel>
               <Button Classes="text" DockPanel.Dock="Right" Command="{Binding ToggleSortCommand}" ToolTip.Tip="{Binding SortTip}">
                 <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Sort" /><TextBlock Text="{Binding SortLabel}" /></StackPanel>
+              </Button>
+              <Button Classes="icon" DockPanel.Dock="Right" Command="{Binding NewFolderCommand}" ToolTip.Tip="{Binding NewFolderTip}">
+                <mi:MaterialIcon Kind="FolderPlusOutline" />
               </Button>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0,0,0">
                 <TextBlock Classes="headline" Text="Decks" />
@@ -34,31 +37,105 @@
               </StackPanel>
             </DockPanel>
             <UniformGrid Columns="2">
-              <Button Classes="filled" Command="{Binding NewDeckCommand}" HorizontalAlignment="Stretch" Margin="0,0,4,0" Padding="8,0">
+              <Button Classes="filled" Command="{Binding NewDeckCommand}" HorizontalAlignment="Stretch" Margin="0,0,4,0" Padding="8,0"
+                      ToolTip.Tip="{Binding CurrentFolderText, StringFormat='Build a new deck in {0}'}">
                 <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlusThick" /><TextBlock Text="New deck" /></StackPanel>
               </Button>
               <Button Classes="tonal" Command="{Binding ImportCommand}" HorizontalAlignment="Stretch" Margin="4,0,0,0" Padding="8,0"
-                      ToolTip.Tip="Import a deck from Encore Decks">
+                      ToolTip.Tip="{Binding ImportTip}">
                 <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Download" /><TextBlock Text="Import" /></StackPanel>
               </Button>
             </UniformGrid>
+            <!-- The current folder: where new decks, imports and new folders go. A segment goes back to that folder. -->
+            <DockPanel Margin="4,0,0,0" ToolTip.Tip="New decks, imports and new folders go to this folder">
+              <mi:MaterialIcon Kind="FolderOpenOutline" DockPanel.Dock="Left" Width="18" Height="18" Classes="muted" Margin="0,0,4,0" />
+              <ItemsControl ItemsSource="{Binding Crumbs}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:FolderCrumb">
+                    <StackPanel Orientation="Horizontal">
+                      <Button Classes="crumb" Classes.last="{Binding IsLast}" Content="{Binding Name}" Command="{Binding Go}" />
+                      <TextBlock Classes="bodySmall muted" Text="›" VerticalAlignment="Center" Margin="2,0" IsVisible="{Binding HasSeparator}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
             <TextBox Classes="search" Watermark="Find a deck" Text="{Binding Query}" IsVisible="{Binding ShowSearch}" />
           </StackPanel>
           <Panel Margin="0,8,0,0">
             <TextBlock Classes="muted wrap" Text="{Binding EmptyText}" IsVisible="{Binding NoDecks}" Margin="8,16" />
+            <TextBlock Classes="muted wrap" Text="No deck matches." IsVisible="{Binding NoMatch}" Margin="8,16" />
             <ScrollViewer IsVisible="{Binding HasDecks}">
-              <StackPanel>
-                <ListBox Classes="plain rows" ItemsSource="{Binding OwnDecks}" SelectedItem="{Binding SelectedOwn}">
-                  <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:DeckItem">
-                      <StackPanel>
-                        <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
-                        <TextBlock Classes="bodySmall muted" Text="{Binding TagsText}" IsVisible="{Binding HasTags}" TextTrimming="CharacterEllipsis" />
-                      </StackPanel>
+              <StackPanel Margin="0,0,10,0">
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.DataTemplates>
+                    <!-- A folder: a click opens or closes it; its menu (or a right-click) manages it. -->
+                    <DataTemplate DataType="vm:FolderRow">
+                      <Button Classes="row" Classes.current="{Binding IsCurrent}" Command="{Binding Toggle}" Padding="8,6,4,6">
+                        <Button.ContextFlyout>
+                          <MenuFlyout>
+                            <MenuItem Header="New folder inside" Command="{Binding NewFolder}" Icon="{mi:MaterialIconExt Kind=FolderPlusOutline}" />
+                            <MenuItem Header="Rename…" Command="{Binding Rename}" Icon="{mi:MaterialIconExt Kind=PencilOutline}" />
+                            <MenuItem Header="Move to…" Command="{Binding Move}" Icon="{mi:MaterialIconExt Kind=FolderMoveOutline}" />
+                            <MenuItem Header="Delete" Command="{Binding Delete}" Icon="{mi:MaterialIconExt Kind=DeleteOutline}" />
+                          </MenuFlyout>
+                        </Button.ContextFlyout>
+                        <DockPanel>
+                          <Border DockPanel.Dock="Left" Width="{Binding IndentWidth}" />
+                          <Panel DockPanel.Dock="Left" Width="20" Margin="0,0,2,0">
+                            <mi:MaterialIcon Kind="ChevronRight" Width="18" Height="18" Classes="muted" IsVisible="{Binding Collapsed}" />
+                            <mi:MaterialIcon Kind="ChevronDown" Width="18" Height="18" Classes="muted" IsVisible="{Binding Expanded}" />
+                          </Panel>
+                          <Panel DockPanel.Dock="Left" Margin="0,0,8,0">
+                            <mi:MaterialIcon Kind="FolderOutline" Width="20" Height="20" Classes="primary" IsVisible="{Binding Collapsed}" />
+                            <mi:MaterialIcon Kind="FolderOpenOutline" Width="20" Height="20" Classes="primary" IsVisible="{Binding Expanded}" />
+                          </Panel>
+                          <Button Classes="icon small" DockPanel.Dock="Right" ToolTip.Tip="Folder actions">
+                            <mi:MaterialIcon Kind="DotsVertical" />
+                            <Button.Flyout>
+                              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuItem Header="New folder inside" Command="{Binding NewFolder}" Icon="{mi:MaterialIconExt Kind=FolderPlusOutline}" />
+                                <MenuItem Header="Rename…" Command="{Binding Rename}" Icon="{mi:MaterialIconExt Kind=PencilOutline}" />
+                                <MenuItem Header="Move to…" Command="{Binding Move}" Icon="{mi:MaterialIconExt Kind=FolderMoveOutline}" />
+                                <MenuItem Header="Delete" Command="{Binding Delete}" Icon="{mi:MaterialIconExt Kind=DeleteOutline}" />
+                              </MenuFlyout>
+                            </Button.Flyout>
+                          </Button>
+                          <TextBlock Classes="label muted" DockPanel.Dock="Right" Text="{Binding CountText}" VerticalAlignment="Center" Margin="8,0,4,0" />
+                          <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        </DockPanel>
+                      </Button>
                     </DataTemplate>
-                  </ListBox.ItemTemplate>
-                </ListBox>
+                    <!-- A deck: a click opens it; a right-click moves it. -->
+                    <DataTemplate DataType="vm:DeckRow">
+                      <Button Classes="row" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+                        <Button.ContextFlyout>
+                          <MenuFlyout>
+                            <MenuItem Header="Move to…" Command="{Binding Move}" Icon="{mi:MaterialIconExt Kind=FolderMoveOutline}" />
+                          </MenuFlyout>
+                        </Button.ContextFlyout>
+                        <DockPanel>
+                          <Border DockPanel.Dock="Left" Width="{Binding IndentWidth}" />
+                          <StackPanel>
+                            <TextBlock Text="{Binding Item.Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="bodySmall muted" Text="{Binding Item.Supporting}" />
+                            <TextBlock Classes="bodySmall muted" Text="{Binding Item.FolderText}" IsVisible="{Binding Item.HasFolder}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="bodySmall muted" Text="{Binding Item.TagsText}" IsVisible="{Binding Item.HasTags}" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </DockPanel>
+                      </Button>
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:EmptyFolderRow">
+                      <DockPanel Margin="8,4,8,8">
+                        <Border DockPanel.Dock="Left" Width="{Binding IndentWidth}" />
+                        <TextBlock Classes="bodySmall muted" Text="Empty folder" Margin="22,0,0,0" />
+                      </DockPanel>
+                    </DataTemplate>
+                  </ItemsControl.DataTemplates>
+                </ItemsControl>
                 <TextBlock Classes="label muted" Text="AI opponents" Margin="16,12,0,2" IsVisible="{Binding HasAiDecks}" />
                 <ListBox Classes="plain rows" ItemsSource="{Binding AiDecks}" SelectedItem="{Binding SelectedAi}">
                   <ListBox.ItemTemplate>
@@ -66,6 +143,7 @@
                       <StackPanel>
                         <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                         <TextBlock Classes="bodySmall muted" Text="{Binding Supporting}" />
+                        <TextBlock Classes="bodySmall muted" Text="{Binding FolderText}" IsVisible="{Binding HasFolder}" TextTrimming="CharacterEllipsis" />
                       </StackPanel>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
@@ -91,6 +169,10 @@
           <StackPanel Spacing="8" DataContext="{Binding Picked}" x:DataType="vm:PickedDeckViewModel">
             <TextBlock Classes="headline wrap" Text="{Binding Name}" />
             <TextBlock Classes="muted" Text="{Binding SavedText}" IsVisible="{Binding HasDate}" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="FolderOutline" Width="16" Height="16" Classes="muted" />
+              <TextBlock Classes="bodySmall muted" Text="{Binding FolderText}" VerticalAlignment="Center" />
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Classes="bodySmall muted" Text="Sleeve" VerticalAlignment="Center" />
               <v:SleevePickerView DataContext="{Binding Sleeves}" IsVisible="{Binding $parent[StackPanel].((vm:PickedDeckViewModel)DataContext).IsOwn}" />
@@ -117,6 +199,10 @@
               </WrapPanel.Styles>
               <Button Classes="tonal" Command="{Binding #Root.((vm:DecksViewModel)DataContext).EditCommand}" IsVisible="{Binding IsOwn}">
                 <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="PencilOutline" /><TextBlock Text="Edit" /></StackPanel>
+              </Button>
+              <Button Classes="outlined" Command="{Binding #Root.((vm:DecksViewModel)DataContext).MoveCommand}" IsVisible="{Binding IsOwn}"
+                      ToolTip.Tip="Move this deck to another folder">
+                <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="FolderMoveOutline" /><TextBlock Text="Move" /></StackPanel>
               </Button>
               <Button Classes="outlined" Command="{Binding #Root.((vm:DecksViewModel)DataContext).DuplicateCommand}" ToolTip.Tip="Build a new deck starting from this one">
                 <StackPanel Orientation="Horizontal" Spacing="8"><mi:MaterialIcon Kind="ContentCopy" /><TextBlock Text="Duplicate" /></StackPanel>

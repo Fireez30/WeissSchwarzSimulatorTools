@@ -63,7 +63,7 @@ The tool reads:
 
 - the cards from `CardContent/Cards` (every serie folder with a `SingleSetData.txt`),
 - the common effects from `<Game>_Data/StreamingAssets/CommonEffects_USER_REFERENCE.txt`,
-- the decks from `Decks`, one text file per deck.
+- the decks from `Decks`, one text file per deck, in its folders and subfolders.
 - the sleeves from either `<Game>_Data/StreamingAssets/Sleeves` , or in `Sleeves`.
 
 It saves the simulator path so you don't have to load it again,  in `~/.config/weiss_simulator_parser/settings.conf` for linux, or in %APPDATA% for windows, which is the default config folder for the OS.
@@ -125,7 +125,18 @@ Card list, filtered by name / text / card code :
 ![Card name filtering](documentation/images/card_list_filter_name.png "Filter by name")
 ## Decks
 
-- Decks of the simulator's `Decks` folder are listed on the left (with a search field when there are many, matching deck names and tags), the AI opponents' decks (`AI_*.txt`) in their own section. Click one to open it.
+- Decks of the simulator's `Decks` folder are listed on the left as a tree of their folders, as in the simulator (with a search field when there are many, matching deck names and tags: results show each deck's folder), the AI opponents' decks (`AI_*.txt`) in their own section. Click one to open it.
+
+## Deck folders
+
+The simulator keeps decks in folders and subfolders of `Decks`; the tool reads and manages that tree.
+
+- Click a folder to open or close it. Open folders are remembered.
+- The current folder is shown above the tree (`Decks › ReZero › Test`): new decks and new folders go there, and the Import dialog starts on it. It is the last folder clicked, or the folder of the deck you opened; click a part of the path to go back up.
+- The folder button next to the sort creates a folder in the current folder.
+- A folder's menu (the ⋮ button, or a right-click) creates a folder inside it, renames it, moves it (with everything in it) into another folder, or deletes it. Only empty folders can be deleted: decks are never deleted with their folder.
+- "Move" on an open deck (or a right-click on a deck) moves it to another folder. In the deck editor, the "Folder" field picks where the deck is saved; changing it on an existing deck moves the deck.
+- Deck names only need to be unique inside their folder. Folder names must work on both Linux and Windows (no `/ \ : * ? " < > |`, no leading dot, no trailing dot or space).
 
 ## Deck page : 
 - Bind sleeves to a deck (right now, sleeves are not saved between update, until the simulator is fully updated.)
@@ -169,7 +180,7 @@ The deck is created as a new public deck in your Encore Decks account when one i
 - You can specify sleeves before saving, or let no sleeves (default behaviour).
 - Add up to 4 tags (the simulator's deck tags): type one and press Enter, or click a tag used before (tags are remembered, even after the decks using them are gone). Click a tag of the deck to remove it.
 - New sleeves can be added from the sleeve picker (here and on an open deck): under "Add a sleeve", paste the path or the link of a JPEG or PNG image, optionally name it, and press Add. The image is copied into the simulator's `Sleeves` folder (never overwriting an existing sleeve) and picked for the deck.
-- Name the deck and press Save: it is written to the simulator's `Decks` folder (a taken name gets a " (2)" suffix). A deck can be saved before it reaches 50 cards.
+- Name the deck and press Save: it is written to the folder picked in the editor (the current folder for a new deck; a name taken in that folder gets a " (2)" suffix). A deck can be saved before it reaches 50 cards.
 - On an open deck, "Edit" changes it in place (renaming the file if you rename the deck) and "Duplicate" starts a new deck from it. AI opponents' decks can only be duplicated. Codes that match no loaded card are kept when saving.
 - Leaving the builder, or closing the window, with unsaved changes asks for confirmation.
 
@@ -195,7 +206,7 @@ Sleeve picker filtered:
 
 Click "Import" in the Decks screen and paste the deck link, e.g. " https://www.encoredecks.com/deck/PPyvcLuvt ". The dialog checks the link as you type; press Import (or Enter).
 
-The deck is saved as a new file in the simulator's `Decks` folder, in the simulator's format. Existing decks are never overwritten: if the name is taken, the new deck gets a " (2)" suffix.
+The dialog has a "Save to" field to pick the folder of the simulator's decks the deck goes to (the current folder of the deck tree at first, see "Deck folders"). The deck is saved there as a new file, in the simulator's format. Existing decks are never overwritten: if the name is taken, the new deck gets a " (2)" suffix.
 
 The import runs in the background; the new deck opens when it is done. If a card is not found, the tool searches for the equivalent card (JP or EN, foil or non foil). If a deck cannot be imported, please open an issue with the link of the deck.
 
@@ -211,7 +222,7 @@ Import from encoredeck list :
 
 The "Encore" screen shows every deck of your linked account (see below) on encoredecks.com, private and unfinished ones included, 24 decks per page: "Previous" and "Next" turn the pages, and the list can be re-read at any time.
 
-Click a deck to preview it: its cards are read from encoredecks.com and shown like a simulator deck, matched to the loaded cards (JP/EN, foil or non foil). Import it with "Import" if you want it in the simulator: it is saved as a new file in the `Decks` folder, exactly like a link import; existing decks are never overwritten. Decks already present in the simulator are marked "in the simulator".
+Click a deck to preview it: its cards are read from encoredecks.com and shown like a simulator deck, matched to the loaded cards (JP/EN, foil or non foil). Import it with "Import" if you want it in the simulator: pick the folder next to the button (the last folder used is remembered), and it is saved there as a new file, exactly like a link import; existing decks are never overwritten. Decks already present in the simulator are marked "in the simulator".
 
 Without a linked account, the screen explains how to link one in Settings. The lists are read in the background, with the same session as uploads. If the session has expired, the account is unlinked: link it again in Settings.
 
@@ -264,6 +275,7 @@ Settings :
 beta (0.2.0) :
 
 - Added deck tags (up to 4 per deck, as in the simulator) when creating or editing a deck; tags used before are remembered and suggested
+- Adapted decks to new simulator setup using tree-like structure, used for deck saving, deck import, deck management
 - Added a feature to upload your own sleeve when editing or creating a deck (PNG or JPEG format)
 - Added a damage calculator screen: set up three attackers, two backrow characters and a climax from a deck, with their effects, and simulate the damage dealt against a given opponent deck
 - Added deck list sorting by date and name

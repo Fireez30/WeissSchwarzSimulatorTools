@@ -50,7 +50,7 @@ WeissSchwarzSimulatorTools.Core/
 │   ├── CardFile.cs           CardData.txt: the cards of a set
 │   ├── CommonEffects.cs      effect texts shared by many cards
 │   ├── CardImages.cs         finding a card's picture
-│   ├── DeckFiles.cs          reading and writing decks
+│   ├── DeckFiles.cs          reading and writing decks, and their folders
 │   └── Sleeves.cs            sleeve images, and adding new ones
 ├── EncoreDecks/            encoredecks.com:
 │   ├── Decks.cs              reading decks, importing them into the simulator
@@ -76,6 +76,7 @@ WeissSchwarzSimulatorTools.App/
 │   ├── DeckEditorViewModel.cs   building or editing a deck
 │   ├── DeckPreviewViewModel.cs  an open deck's stats and card groups (Decks and Encore screens)
 │   ├── DeckDialogs.cs        Import, Upload and PDF dialogs
+│   ├── DeckFolders.cs        the deck tree's rows, the folder name and Move dialogs
 │   ├── SleevePickerViewModel.cs the sleeve picker popup
 │   ├── EncoreViewModel.cs    the Encore Deck screen: the linked account's decks
 │   ├── DamageViewModel.cs    the Damage screen
@@ -99,6 +100,15 @@ matched to loaded cards with `CardIndex.ResolveDeck`, which tries the other spel
 code (`CardCodes`) and returns a `Deck`: its cards, plus the codes that matched nothing
 (`Deck.Unmatched`). `DeckPreviewViewModel` then counts types, levels, colours and triggers for
 the stat tiles.
+
+**Deck folders.** The simulator lets decks live in folders and subfolders of `Decks`.
+`DeckFiles.List` walks the whole tree (hidden folders such as `.aidecks_cache` are skipped) and
+sets each deck's `Folder`: its path relative to `Decks`, with `/` between parts (`ReZero/Test`;
+`""` is `Decks` itself). `DeckFiles.FolderPath` turns that back into a path, refusing anything
+that would leave `Decks`. `CreateFolder`, `RenameFolder`, `MoveFolder`, `DeleteFolder` (empty
+folders only) and `MoveDeck` change the tree; deck names only need to be unique inside a folder.
+The Decks screen shows the tree as a flat list of rows (`FolderRow`, `DeckRow`), rebuilt from
+the open folders, and keeps a current folder where new decks, imports and new folders go.
 
 **Importing from Encore Decks.** `Decks.ImportAsync` downloads the deck's JSON, matches its
 codes the same way, and saves it with `DeckFiles.SaveNew`, which never overwrites a file (a

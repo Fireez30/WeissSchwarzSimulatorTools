@@ -15,6 +15,11 @@
 // deck has none. A deck has up to MaxTags Tag: lines (none when it has no tags).
 //
 // AI_*.txt files are the AI opponents' decks, copied there by the simulator.
+//
+// Decks can be sorted into folders and subfolders of Decks: the simulator shows the same tree.
+// A folder is named by its path relative to Decks, with / between its parts ("ReZero/Test"); the
+// Decks folder itself is "". Hidden folders (".aidecks_cache", the simulator's) are not deck
+// folders. Deck names only need to be unique inside their folder.
 
 using System.Globalization;
 using System.Text;
@@ -35,6 +40,8 @@ public sealed record DeckFile
     public IReadOnlyList<string> Tags { get; init; } = [];
     public IReadOnlyList<string> Codes { get; init; } = [];
     public string Path { get; init; } = "";
+    /// <summary>The deck's folder, relative to the Decks folder ("" for Decks itself, "ReZero/Test" for a subfolder).</summary>
+    public string Folder { get; init; } = "";
     /// <summary>Deck of an AI opponent.</summary>
     public bool Ai { get; init; }
 
@@ -46,7 +53,7 @@ public sealed record DeckFile
 
     public bool Equals(DeckFile? other) =>
         other is not null && Name == other.Name && Date == other.Date && Sleeve == other.Sleeve
-        && Tags.SequenceEqual(other.Tags) && Codes.SequenceEqual(other.Codes) && Path == other.Path && Ai == other.Ai;
+        && Tags.SequenceEqual(other.Tags) && Codes.SequenceEqual(other.Codes) && Path == other.Path && Folder == other.Folder && Ai == other.Ai;
 
     public override int GetHashCode() => HashCode.Combine(Name, Date, Path);
 }
@@ -93,8 +100,30 @@ public static class DeckFiles
         };
     }
 
-    /// <summary>Every deck in <paramref name="dir"/>, sorted by name (a missing folder has no decks).</summary>
-    public static List<DeckFile> List(string dir)
+    /// <summary>
+    /// Every deck in the Decks folder <paramref name="root"/> and its subfolders, sorted by name
+    /// (a missing folder has no decks).
+    /// </summary>
+    public static List<DeckFile> List(string root)
+    {
+        if (!Directory.Exists(root)) return [];
+        var decks = new List<DeckFile>();
+        foreach (var folder in Folders(root).Prepend(""))
+        {
+            // A subfolder that cannot be read is skipped, not the whole list.
+            try
+            {
+                decks.AddRange(ListIn(FolderPath(root, folder)).Select(d => d with { Folder = folder }));
+            }
+            catch (UserException) when (folder.Length > 0)
+            {
+            }
+        }
+        return decks.OrderBy(d => d.Ai).ThenBy(d => d.Name.ToLowerInvariant(), StringComparer.Ordinal).ThenBy(d => d.Folder, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>The decks directly in <paramref name="dir"/>, not in its subfolders.</summary>
+    private static List<DeckFile> ListIn(string dir)
     {
         if (!Directory.Exists(dir)) return [];
         var files = Errors.WithContext($"reading {dir}", () => Directory.GetFiles(dir));
@@ -111,7 +140,197 @@ public static class DeckFiles
             {
             }
         }
-        return decks.OrderBy(d => d.Ai).ThenBy(d => d.Name.ToLowerInvariant(), StringComparer.Ordinal).ToList();
+        return decks;
+    }
+
+    // Folders.
+
+    /// <summary>Every deck folder under <paramref name="root"/>, at any depth, sorted (parents before their subfolders).</summary>
+    public static List<string> Folders(string root)
+    {
+        var found = new List<string>();
+        void Walk(string dir, string relative)
+        {
+            string[] subdirs;
+            try
+            {
+                subdirs = Directory.GetDirectories(dir);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return;
+            }
+            foreach (var sub in subdirs.OrderBy(d => System.IO.Path.GetFileName(d), StringComparer.OrdinalIgnoreCase))
+            {
+                var name = System.IO.Path.GetFileName(sub);
+                if (name.StartsWith('.')) continue;
+                // Links could loop, or lead out of the Decks folder.
+                if (new DirectoryInfo(sub).LinkTarget is not null) continue;
+                var path = JoinFolder(relative, name);
+                found.Add(path);
+                Walk(sub, path);
+            }
+        }
+        if (Directory.Exists(root)) Walk(root, "");
+        return found;
+    }
+
+    /// <summary>"ReZero" + "Test" -> "ReZero/Test"; "" + "ReZero" -> "ReZero".</summary>
+    public static string JoinFolder(string parent, string name) => parent.Length == 0 ? name : $"{parent}/{name}";
+
+    /// <summary>The parent of a folder: "ReZero/Test" -> "ReZero", "ReZero" -> "".</summary>
+    public static string ParentFolder(string folder)
+    {
+        var slash = folder.LastIndexOf('/');
+        return slash < 0 ? "" : folder[..slash];
+    }
+
+    /// <summary>The last part of a folder's path: "ReZero/Test" -> "Test".</summary>
+    public static string FolderName(string folder) => folder[(folder.LastIndexOf('/') + 1)..];
+
+    /// <summary>Whether <paramref name="folder"/> is <paramref name="ancestor"/> or one of its subfolders.</summary>
+    public static bool IsInFolder(string folder, string ancestor) =>
+        ancestor.Length == 0 || folder == ancestor || folder.StartsWith(ancestor + "/", StringComparison.Ordinal);
+
+    /// <summary>
+    /// The full path of the deck folder <paramref name="folder"/> under <paramref name="root"/>.
+    /// Fails for a path that could lead out of it, or to a hidden folder ("..", "." or empty parts).
+    /// </summary>
+    public static string FolderPath(string root, string folder)
+    {
+        if (folder.Length == 0) return root;
+        var parts = folder.Split('/');
+        var path = System.IO.Path.Combine([root, .. parts]);
+        var inside = System.IO.Path.GetFullPath(root).TrimEnd(System.IO.Path.DirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar;
+        if (parts.Any(p => p.Trim().Length == 0 || p.StartsWith('.') || p.Contains('\\'))
+            || !System.IO.Path.GetFullPath(path).StartsWith(inside, StringComparison.Ordinal))
+            throw new UserException($"\"{folder}\" is not a deck folder");
+        return path;
+    }
+
+    private static readonly string[] ReservedNames =
+        ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+         "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"];
+
+    /// <summary>
+    /// Why <paramref name="name"/> cannot name a deck folder, or null when it can. Names must work on
+    /// Linux and Windows alike, since the simulator runs on both.
+    /// </summary>
+    public static string? FolderNameProblem(string name)
+    {
+        if (name.Trim().Length == 0) return "Give the folder a name.";
+        if (name != name.Trim()) return "A folder name cannot start or end with a space.";
+        if (name.StartsWith('.')) return "A folder name cannot start with a dot.";
+        if (name.EndsWith('.')) return "A folder name cannot end with a dot.";
+        if (name.Any(c => c is '/' or '\\' or ':' or '*' or '?' or '"' or '<' or '>' or '|' || char.IsControl(c)))
+            return "A folder name cannot hold any of / \\ : * ? \" < > |";
+        if (ReservedNames.Contains(name.Split('.')[0], StringComparer.OrdinalIgnoreCase))
+            return $"\"{name}\" is reserved on Windows.";
+        return null;
+    }
+
+    /// <summary>Fails unless <paramref name="name"/> is free in <paramref name="dir"/> (ignoring case, as on Windows).</summary>
+    private static void CheckFree(string dir, string name, string? except = null)
+    {
+        if (!Directory.Exists(dir)) return;
+        var taken = Errors.WithContext($"reading {dir}", () => Directory.GetFileSystemEntries(dir))
+            .Select(System.IO.Path.GetFileName)
+            .Any(n => n is not null && n != except && n.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (taken) throw new UserException($"\"{name}\" already exists in this folder");
+    }
+
+    private static void CheckName(string name)
+    {
+        if (FolderNameProblem(name) is { } problem) throw new UserException(problem.TrimEnd('.'));
+    }
+
+    private static void CheckExists(string root, string folder)
+    {
+        if (folder.Length == 0 || !Directory.Exists(FolderPath(root, folder)))
+            throw new UserException($"the folder \"{folder}\" does not exist");
+    }
+
+    /// <summary>Creates the folder <paramref name="name"/> in <paramref name="parent"/>. Returns the new folder.</summary>
+    public static string CreateFolder(string root, string parent, string name)
+    {
+        CheckName(name);
+        var parentDir = FolderPath(root, parent);
+        CheckFree(parentDir, name);
+        var folder = JoinFolder(parent, name);
+        Errors.WithContext($"creating {name}", () => Directory.CreateDirectory(FolderPath(root, folder)));
+        return folder;
+    }
+
+    /// <summary>Renames a folder, keeping it where it is. Returns the renamed folder.</summary>
+    public static string RenameFolder(string root, string folder, string name)
+    {
+        CheckName(name);
+        CheckExists(root, folder);
+        var parent = ParentFolder(folder);
+        var renamed = JoinFolder(parent, name);
+        if (renamed == folder) return folder;
+        CheckFree(FolderPath(root, parent), name, except: FolderName(folder));
+        var (from, to) = (FolderPath(root, folder), FolderPath(root, renamed));
+        Errors.WithContext($"renaming {from}", () =>
+        {
+            if (from.Equals(to, StringComparison.OrdinalIgnoreCase))
+            {
+                // Only the case changes: Windows needs a step through another name.
+                var step = $"{from}.renaming";
+                Directory.Move(from, step);
+                Directory.Move(step, to);
+            }
+            else
+                Directory.Move(from, to);
+        });
+        return renamed;
+    }
+
+    /// <summary>Moves a folder, with everything in it, into <paramref name="parent"/>. Returns the moved folder.</summary>
+    public static string MoveFolder(string root, string folder, string parent)
+    {
+        CheckExists(root, folder);
+        if (IsInFolder(parent, folder)) throw new UserException("a folder cannot be moved into itself");
+        var moved = JoinFolder(parent, FolderName(folder));
+        if (moved == folder) return folder;
+        var parentDir = FolderPath(root, parent);
+        if (!Directory.Exists(parentDir)) throw new UserException($"the folder \"{parent}\" does not exist");
+        CheckFree(parentDir, FolderName(folder));
+        var (from, to) = (FolderPath(root, folder), FolderPath(root, moved));
+        Errors.WithContext($"moving {from}", () => Directory.Move(from, to));
+        return moved;
+    }
+
+    /// <summary>Whether a folder holds no file at all (empty subfolders are fine).</summary>
+    public static bool IsEmptyFolder(string root, string folder) =>
+        !Errors.WithContext($"reading {folder}", () =>
+            Directory.EnumerateFiles(FolderPath(root, folder), "*", SearchOption.AllDirectories).Any());
+
+    /// <summary>Deletes a folder that holds no file (decks are never deleted with their folder).</summary>
+    public static void DeleteFolder(string root, string folder)
+    {
+        CheckExists(root, folder);
+        if (!IsEmptyFolder(root, folder))
+            throw new UserException($"\"{FolderName(folder)}\" is not empty: move its decks out first");
+        Errors.WithContext($"deleting {folder}", () => Directory.Delete(FolderPath(root, folder), true));
+    }
+
+    /// <summary>
+    /// Moves the deck file at <paramref name="path"/> into <paramref name="folder"/>, keeping its
+    /// file name. Fails when that folder already has the file or a deck of the same name.
+    /// </summary>
+    public static DeckFile MoveDeck(string root, string path, string folder)
+    {
+        var dir = FolderPath(root, folder);
+        if (!Directory.Exists(dir)) throw new UserException($"the folder \"{folder}\" does not exist");
+        var deck = Errors.WithContext($"reading {path}", () => Parse(Encoding.UTF8.GetString(File.ReadAllBytes(path)), path));
+        var target = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(path));
+        if (System.IO.Path.GetFullPath(target) == System.IO.Path.GetFullPath(path)) return deck with { Folder = folder };
+        CheckFree(dir, System.IO.Path.GetFileName(path));
+        if (ListIn(dir).Any(d => d.Name.Equals(deck.Name, StringComparison.OrdinalIgnoreCase)))
+            throw new UserException($"a deck of this folder is already named \"{deck.Name}\"");
+        Errors.WithContext($"moving {path}", () => File.Move(path, target));
+        return deck with { Path = target, Folder = folder };
     }
 
     /// <summary>The content of a deck file, in the simulator's format.</summary>
@@ -150,8 +369,9 @@ public static class DeckFiles
     }
 
     /// <summary>
-    /// Writes a new deck file, never overwriting one: a taken name gets a " (2)", " (3)"… suffix,
-    /// which is also used as the deck name. Returns the saved deck.
+    /// Writes a new deck file in <paramref name="dir"/> (the Decks folder or one of its subfolders),
+    /// never overwriting one: a name taken in that folder gets a " (2)", " (3)"… suffix, which is
+    /// also used as the deck name. Returns the saved deck.
     /// </summary>
     public static DeckFile SaveNew(string dir, string name, string date, string sleeve, IReadOnlyList<string> codes,
         IReadOnlyList<string>? tags = null)
@@ -162,7 +382,7 @@ public static class DeckFiles
         {
             try
             {
-                return List(dir).Any(d => d.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
+                return ListIn(dir).Any(d => d.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
             }
             catch (UserException)
             {
@@ -186,14 +406,14 @@ public static class DeckFiles
 
     /// <summary>
     /// Rewrites an existing deck file. When the name changed, the file is renamed to match it if
-    /// that file name is free. Fails when another deck already uses the new name.
+    /// that file name is free. Fails when another deck of its folder already uses the new name.
     /// </summary>
     public static DeckFile Update(string path, string name, string date, string sleeve, IReadOnlyList<string> codes,
         IReadOnlyList<string>? tags = null)
     {
         name = name.Trim();
         var dir = System.IO.Path.GetDirectoryName(path) is { Length: > 0 } d ? d : ".";
-        if (List(dir).Any(deck => deck.Path != path && deck.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+        if (ListIn(dir).Any(deck => deck.Path != path && deck.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
             throw new UserException($"another deck is already named \"{name}\"");
         var renamed = System.IO.Path.Combine(dir, $"{FileStemFor(name)}.txt");
         var target = path;

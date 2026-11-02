@@ -1,0 +1,23 @@
+<!-- Names a deck folder: a new one, or one being renamed. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WeissSchwarzSimulatorTools.App.ViewModels"
+             xmlns:mi="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="WeissSchwarzSimulatorTools.App.Views.FolderNameDialog"
+             x:DataType="vm:FolderNameDialogViewModel">
+  <StackPanel Width="420" Spacing="8">
+    <mi:MaterialIcon Kind="FolderOutline" Width="28" Height="28" Classes="primary" />
+    <TextBlock Classes="headline" Text="{Binding Title}" HorizontalAlignment="Center" />
+    <TextBlock Classes="muted wrap" Text="{Binding Message}" />
+    <TextBox Name="NameField" Text="{Binding Name}" Watermark="Folder name" Margin="0,4,0,0"
+             AttachedToVisualTree="OnNameAttached" KeyDown="OnNameKeyDown" />
+    <TextBlock Classes="bodySmall error wrap" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
+    <Border Background="{DynamicResource ErrorContainer}" CornerRadius="12" Padding="12" IsVisible="{Binding HasError}">
+      <TextBlock Text="{Binding Error}" Foreground="{DynamicResource OnErrorContainer}" TextWrapping="Wrap" />
+    </Border>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+      <Button Classes="text" Content="Cancel" Command="{Binding CloseCommand}" />
+      <Button Classes="filled" Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}" IsEnabled="{Binding CanConfirm}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

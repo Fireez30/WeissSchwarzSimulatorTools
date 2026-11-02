@@ -100,6 +100,35 @@ public sealed partial class EncoreViewModel : ObservableObject
     public bool HasPreview => Resolved is not null;
     public bool CanImport => !Importing;
 
+    /// <summary>The folders of the simulator's Decks folder a deck can be imported into; read when the screen opens.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasFolders))]
+    private IReadOnlyList<Option<string>> _folders = FolderLabels.Choices("", []);
+
+    public bool HasFolders => Folders.Count > 1;
+
+    /// <summary>The folder decks are imported into: the last one used.</summary>
+    [ObservableProperty]
+    private Option<string> _importFolder = new("", FolderLabels.Root);
+
+    partial void OnImportFolderChanged(Option<string> value)
+    {
+        // The ComboBox clears its selection while the folder list is replaced.
+        if (value is not null && !_readingFolders) _main.SaveSetting(Settings.ImportFolder, value.Value);
+    }
+
+    private bool _readingFolders;
+
+    /// <summary>Re-reads the folders, keeping the last one used picked (Decks itself when it is gone).</summary>
+    private void ReadFolders()
+    {
+        var choices = FolderLabels.Choices(_main.DecksPath);
+        _readingFolders = true;
+        Folders = choices;
+        ImportFolder = FolderLabels.Pick(choices, _main.Settings.Get(Settings.ImportFolder));
+        _readingFolders = false;
+    }
+
     public string SavedText => Resolved is null ? "" : Resolved.Date.Trim().Length == 0
         ? "On encoredecks.com"
         : $"On encoredecks.com, saved {Resolved.Date.Trim()}";
@@ -132,6 +161,7 @@ public sealed partial class EncoreViewModel : ObservableObject
     private void Opened()
     {
         if (_main.Account.Linked is null) return;
+        ReadFolders();
         if (Loaded is null && !Loading && !Failed) _ = FetchPage(Page);
         _ = ReadLocalNames();
     }
@@ -240,11 +270,13 @@ public sealed partial class EncoreViewModel : ObservableObject
     {
         if (Picked is not { } picked || Importing) return;
         Importing = true;
-        var (index, dir) = (_main.CardIndex, _main.DecksPath);
+        var (index, folder) = (_main.CardIndex, (ImportFolder ?? FolderLabels.Pick(Folders, "")).Value);
         try
         {
+            var dir = DeckFiles.FolderPath(_main.DecksPath, folder);
+            if (!Directory.Exists(dir)) throw new UserException($"the folder {FolderLabels.Path(folder)} does not exist any more");
             var deck = await Task.Run(() => WeissSchwarzSimulatorTools.EncoreDecks.Decks.ImportAsync(WeissSchwarzSimulatorTools.EncoreDecks.Decks.DeckLink(picked.Id), index, dir));
-            _main.Notify(new Notice.Info(ImportDialogViewModel.Message(deck)));
+            _main.Notify(new Notice.Info(ImportDialogViewModel.Message(deck, folder)));
             await ReadLocalNames();
         }
         catch (Exception e)

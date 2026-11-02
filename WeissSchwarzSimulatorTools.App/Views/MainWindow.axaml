@@ -30,6 +30,12 @@
     <DataTemplate DataType="vm:ExportDialogViewModel">
       <v:ExportDialog />
     </DataTemplate>
+    <DataTemplate DataType="vm:FolderNameDialogViewModel">
+      <v:FolderNameDialog />
+    </DataTemplate>
+    <DataTemplate DataType="vm:MoveDialogViewModel">
+      <v:MoveDialog />
+    </DataTemplate>
   </Window.DataTemplates>
 
   <Panel>

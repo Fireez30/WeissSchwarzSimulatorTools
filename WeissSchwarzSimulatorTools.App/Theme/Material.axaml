@@ -334,6 +334,63 @@
     <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
   </Style>
 
+  <!-- Rows of a tree made of buttons (the deck folders): like ListBox.rows. -->
+  <Style Selector="Button.row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="Margin" Value="0,0,0,2" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.row /template/ ContentPresenter">
+    <Setter Property="Transitions" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Button.row:pointerover /template/ ContentPresenter, Button.row:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+  <Style Selector="Button.row:pressed">
+    <Setter Property="RenderTransform" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Button.row.selected /template/ ContentPresenter, Button.row.selected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+  </Style>
+  <Style Selector="Button.row.selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+  </Style>
+  <Style Selector="Button.row.current > DockPanel > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="Button.row.current /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <!-- Segments of a folder path: small text buttons; the last one is the folder itself. -->
+  <Style Selector="Button.crumb">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4,2" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.crumb:pointerover /template/ ContentPresenter, Button.crumb:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+  <Style Selector="Button.crumb.last">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+
   <!-- Text fields -->
   <Style Selector="TextBox">
     <Setter Property="CornerRadius" Value="8" />
